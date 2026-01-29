@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { generateSleepStoryScript, generateAudio } from '../services/geminiService';
 import { SleepTheme, SLEEP_THEMES, StoryFandom, GENRE_CATEGORIES, FANDOM_CATEGORIES, SavedNarrative, NarrativeType, StoryGenre, VOICE_OPTIONS, SLEEP_STORY_LENGTHS } from '../types';
@@ -60,7 +59,8 @@ const SleepStory: React.FC<{
   const [isCustomLength, setIsCustomLength] = useLocalStorage<boolean>('sleep-is-custom-len', false);
 
   // Audio State
-  const { loadAudio, unloadAudio, seek, downloadWav, downloadMp3, stop, isMp3BackgroundEncoding, mp3BackgroundEncodingProgress, isMp3Ready, ...audioPlayerProps } = useAudio();
+  // Fix: Updated useAudio destructuring to reflect AudioControls interface changes
+  const { loadAudio, unloadAudio, seek, downloadWav, downloadMp3, stop, ...audioPlayerProps } = useAudio();
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [currentAudioBase64, setCurrentAudioBase64] = useState<string | null>(null);
 
@@ -137,7 +137,10 @@ const SleepStory: React.FC<{
   };
 
   const handleGenerateAudio = async () => {
-    if (!generatedText) return;
+    if (!generatedText) {
+        setError("Please generate some story text first for narration.");
+        return;
+    }
     setIsGeneratingAudio(true);
     setError(null);
     try {
@@ -145,7 +148,7 @@ const SleepStory: React.FC<{
         setCurrentAudioBase64(audioB64);
         await loadAudio(audioB64);
     } catch (e: any) {
-        setError("Audio generation failed: " + e.message);
+        setError("Audio generation failed: " + (e.message || "An unknown error occurred during audio generation. Ensure your API key is valid and has access to TTS features."));
     } finally {
         setIsGeneratingAudio(false);
     }
@@ -264,7 +267,7 @@ const SleepStory: React.FC<{
         </div>
         <TextArea value={generatedText} onChange={e => setGeneratedText(e.target.value)} rows={10} className="bg-gray-900/50 rounded-xl font-serif leading-relaxed" />
         
-        {(audioPlayerProps.isReady || isGeneratingAudio || audioPlayerProps.isLoading || audioPlayerProps.error || isMp3BackgroundEncoding) && (
+        {(audioPlayerProps.isReady || isGeneratingAudio || audioPlayerProps.isLoading) && (
             <div className="mt-4">
                 <AudioPlayer 
                     {...audioPlayerProps}
@@ -274,9 +277,6 @@ const SleepStory: React.FC<{
                     downloadWav={(name) => downloadWav(generateFilename(`sleep-story-${theme.toLowerCase().replace(/\s+/g, '-')}`, 'wav'))}
                     downloadMp3={(name) => downloadMp3(generateFilename(`sleep-story-${theme.toLowerCase().replace(/\s+/g, '-')}`, 'mp3'))}
                     stop={stop}
-                    isMp3BackgroundEncoding={isMp3BackgroundEncoding}
-                    mp3BackgroundEncodingProgress={mp3BackgroundEncodingProgress}
-                    isMp3Ready={isMp3Ready}
                 />
             </div>
         )}

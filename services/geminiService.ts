@@ -1,5 +1,4 @@
 
-
 import { GoogleGenAI, Type, GenerateContentResponse, Modality } from '@google/genai';
 import {
   StoryCharacter,
@@ -9,13 +8,15 @@ import {
   AnalysisResult,
   PromptAnalysisResult,
   AdBrainstormResult,
+  ImageGenConfig,
 } from '../types';
 
 // Use Flash for high-speed creative generation
 const NARRATIVE_MODEL = 'gemini-3-flash-preview';
 // Use Pro for deep reasoning and analysis tasks
 const ANALYSIS_MODEL = 'gemini-3-pro-preview';
-const IMAGE_MODEL = 'gemini-2.5-flash-image';
+const IMAGE_MODEL_FLASH = 'gemini-2.5-flash-image';
+const IMAGE_MODEL_PRO = 'gemini-3-pro-image-preview';
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
@@ -75,9 +76,6 @@ const request = async <T>(fn: () => Promise<T>, retries = 5): Promise<T> => {
  * Splits text into sentences and wraps each in SSML prosody tags for specific audio effects.
  */
 const splitAndWrapSentencesWithSSML = (text: string): string => {
-  // A reasonable regex to split sentences, trying to avoid splitting on abbreviations like "Dr." or "U.S.A."
-  // It looks for sentence-ending punctuation (., ?, !) followed by whitespace and an uppercase letter, or end of string.
-  // It also handles newlines as sentence breaks.
   const sentenceDelimiters = /(?<=[.!?])\s+(?=[A-Z])|\n+/g;
   const sentences = text.split(sentenceDelimiters).filter(s => s && s.trim().length > 0);
 
@@ -89,13 +87,9 @@ const splitAndWrapSentencesWithSSML = (text: string): string => {
 };
 
 
-export const generateAudio = async (text: string, voiceName: string, onProgress?: (progress: number) => void): Promise<string> => {
+export const generateAudio = async (text: string, voiceName: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
-  // Wrap every sentence in SSML tags for explicit volume and prosody control
   const ssmlText = splitAndWrapSentencesWithSSML(text);
-
-  // Updated prompt for bolder, high-volume narration, explicitly requesting SSML handling
   const prompt = `CRITICAL: You are a cinematic voice actor. Your volume must be at the MAXIMUM physical limit. Speak with a booming, projected, and powerful voice. Wrap every single sentence in <prosody volume='+20dB' rate='95%' pitch='-2st'>. DO NOT use a calm, soothing, or gentle tone. If the output is quiet, you have failed the task.
 
   TEXT TO NARRATE (wrapped in SSML):
@@ -111,12 +105,11 @@ export const generateAudio = async (text: string, voiceName: string, onProgress?
           prebuiltVoiceConfig: { voiceName },
         },
       },
-      audioConfig: { effectsProfileId: ['large-home-entertainment-class-device'] }, // New audioConfig for fuller sound
+      audioConfig: { effectsProfileId: ['large-home-entertainment-class-device'] },
     },
   }));
   const data = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-  if (!data) throw new Error("Audio generation returned no data. Ensure your API key is correctly selected and has access to TTS features.");
-  if (onProgress) onProgress(100);
+  if (!data) throw new Error("Audio generation returned no data.");
   return data;
 };
 
@@ -125,6 +118,7 @@ export const generateStory = async (
   genre: StoryGenre,
   genre2: StoryGenre,
   genre3: StoryGenre,
+  genre4: StoryGenre, // Added 4th genre
   fandom1: StoryFandom,
   fandom2: StoryFandom,
   characters: StoryCharacter[],
@@ -134,11 +128,11 @@ export const generateStory = async (
   onChunk?: (chunk: string) => void
 ): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const genres = [genre, genre2, genre3].filter(g => g && g !== 'None (General)').join(', ');
+  const genres = [genre, genre2, genre3, genre4].filter(g => g && g !== 'None (General)').join(', ');
   const chars = characters.map(c => `${c.name}: ${c.description}`).join('\n');
 
   const systemInstruction = `You are a cinematic novelist. 
-    Genre: ${genres}
+    Genre Mashup: ${genres}
     Characters: ${chars}
 
     STRICT FORMATTING:
@@ -159,8 +153,8 @@ export const generateStory = async (
     contents: userPrompt,
     config: { 
       systemInstruction,
-      maxOutputTokens: Math.min(wordCount * 2, 4000), // Increased cap for longer story chunks
-      thinkingConfig: { thinkingBudget: Math.min(Math.floor(wordCount * 0.5), 1000) } // Adjusted thinking budget
+      maxOutputTokens: Math.min(wordCount * 2, 4000),
+      thinkingConfig: { thinkingBudget: Math.min(Math.floor(wordCount * 0.5), 1000) }
     }
   })) as any;
 
@@ -180,23 +174,36 @@ export const generateImagePrompt = async (text: string): Promise<string> => {
     model: NARRATIVE_MODEL,
     contents: `Based on this story segment, write a 1-sentence cinematic image generation prompt. Focus on lighting, atmosphere, and character emotion. No symbols: ${text.slice(-1000)}`,
     config: {
-      maxOutputTokens: 100, // Short prompt
+      maxOutputTokens: 100,
       thinkingConfig: { thinkingBudget: 25 }
     }
   }));
-  return cleanNarrativeText(response.text).trim();
+  const promptText = cleanNarrativeText(response.text).trim();
+  if (!promptText) {
+    throw new Error("AI failed to generate a descriptive image prompt.");
+  }
+  return promptText;
 };
 
-export const generateImage = async (prompt: string): Promise<string> => {
+export const generateImage = async (prompt: string, config?: ImageGenConfig): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const isHighRes = config?.imageSize === "2K" || config?.imageSize === "4K";
+  const modelName = isHighRes ? IMAGE_MODEL_PRO : (config?.model || IMAGE_MODEL_FLASH);
+
   const response = await request<GenerateContentResponse>(() => ai.models.generateContent({
-    model: IMAGE_MODEL,
+    model: modelName,
     contents: prompt,
-    config: { imageConfig: { aspectRatio: "16:9" } }
+    config: { 
+      imageConfig: { 
+        aspectRatio: config?.aspectRatio || "16:9",
+        imageSize: config?.imageSize || "1K"
+      } 
+    }
   }));
-  const part = response.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-  if (!part?.data) throw new Error("Visual generation failed.");
-  return part.data;
+  
+  const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+  if (!imagePart?.inlineData?.data) throw new Error("Visual generation failed.");
+  return imagePart.inlineData.data;
 };
 
 export const analyzeStory = async (story: string): Promise<AnalysisResult> => {
@@ -207,7 +214,7 @@ export const analyzeStory = async (story: string): Promise<AnalysisResult> => {
     config: {
       systemInstruction: "Strict JSON analysis. No bolding.",
       responseMimeType: "application/json",
-      maxOutputTokens: 1500, // For analysis output
+      maxOutputTokens: 1500,
       thinkingConfig: { thinkingBudget: 500 },
       responseSchema: {
         type: Type.OBJECT,
@@ -246,7 +253,6 @@ export const analyzeStory = async (story: string): Promise<AnalysisResult> => {
   try {
     return JSON.parse(response.text || '{}');
   } catch (e) {
-    console.error("Analysis JSON parse failed", e);
     return { critique: "Analysis parsing error.", suggestions: [], vocabularyScore: 0 };
   }
 };
@@ -260,7 +266,7 @@ export const generateYouTubeContent = async (story: string, isSeries?: boolean):
     config: {
       systemInstruction,
       responseMimeType: "application/json",
-      maxOutputTokens: 1500, // For YouTube metadata
+      maxOutputTokens: 1500,
       thinkingConfig: { thinkingBudget: 500 },
       responseSchema: {
         type: Type.OBJECT,
@@ -296,7 +302,7 @@ export const generateStoryIdeas = async (genres: string[], fandoms: string[]): P
     config: {
       systemInstruction: "You are a creative narrative consultant. Output a list of story ideas in JSON format. Each idea must have a 'title' and a 'prompt'. NO BOLDING. Output ONLY the JSON array.",
       responseMimeType: "application/json",
-      maxOutputTokens: 750, // For 6 ideas
+      maxOutputTokens: 750,
       thinkingConfig: { thinkingBudget: 150 },
       responseSchema: {
         type: Type.ARRAY,
@@ -316,7 +322,6 @@ export const generateStoryIdeas = async (genres: string[], fandoms: string[]): P
     const raw = response.text || '[]';
     return JSON.parse(raw);
   } catch (e) {
-    console.error("Story ideas parsing failed", e);
     return [];
   }
 };
@@ -338,8 +343,8 @@ export const generateMeditationScript = async (
     contents: customPrompt || `Guided ${focus} meditation.`,
     config: { 
       systemInstruction,
-      maxOutputTokens: Math.min(wordCount * 2, 1000), // Cap for a chunk of script
-      thinkingConfig: { thinkingBudget: Math.min(Math.floor(wordCount * 0.5), 250) } // Reserve thinking tokens
+      maxOutputTokens: Math.min(wordCount * 2, 1000),
+      thinkingConfig: { thinkingBudget: Math.min(Math.floor(wordCount * 0.5), 250) }
     }
   }) as any;
   let fullText = '';
@@ -374,10 +379,11 @@ export const generateSleepStoryScript = async (
     contents: prompt,
     config: { 
       systemInstruction,
-      maxOutputTokens: Math.min(wordCount * 2, 1000), // Cap for a chunk of script
-      thinkingConfig: { thinkingBudget: Math.min(Math.floor(wordCount * 0.5), 250) } // Reserve thinking tokens
+      maxOutputTokens: Math.min(wordCount * 2, 1000),
+      thinkingConfig: { thinkingBudget: Math.min(Math.floor(wordCount * 0.5), 250) }
     }
-  }) as any; let fullText = '';
+  }) as any;
+  let fullText = '';
   for await (const chunk of stream) {
     const text = chunk.text || '';
     const cleaned = cleanNarrativeText(text);
@@ -393,7 +399,7 @@ export const generateIntroScript = async (name: string, tone: string, themes: st
         model: NARRATIVE_MODEL,
         contents: `Cinematic intro for "${name}". Tone: ${tone}. Themes: ${themes}. No bolding.`,
         config: {
-          maxOutputTokens: 500, // Intro scripts are shorter
+          maxOutputTokens: 500,
           thinkingConfig: { thinkingBudget: 100 }
         }
     }));
@@ -408,7 +414,7 @@ export const analyzePrompt = async (prompt: string): Promise<PromptAnalysisResul
     config: {
       systemInstruction: "Analyze story prompt. JSON. No bolding. In the 'refinedPrompt' field, provide a rewritten, much better, highly evocative version of the user's input.",
       responseMimeType: "application/json",
-      maxOutputTokens: 1000, // For prompt analysis
+      maxOutputTokens: 1000,
       thinkingConfig: { thinkingBudget: 250 },
       responseSchema: {
         type: Type.OBJECT,
@@ -464,7 +470,7 @@ export const generateAdScript = async (
     contents: prompt,
     config: { 
       systemInstruction,
-      maxOutputTokens: 1000, // Ad scripts are typically under 1k words
+      maxOutputTokens: 1000,
       thinkingConfig: { thinkingBudget: 250 }
     }
   }));
@@ -479,7 +485,7 @@ export const brainstormAdDetails = async (product: string): Promise<AdBrainstorm
     config: {
       systemInstruction: "Strict JSON. No bolding.",
       responseMimeType: "application/json",
-      maxOutputTokens: 500, // Brainstorming results for audiences/benefits
+      maxOutputTokens: 500,
       thinkingConfig: { thinkingBudget: 100 },
       responseSchema: {
         type: Type.OBJECT,

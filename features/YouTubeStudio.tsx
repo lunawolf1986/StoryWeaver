@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { SavedNarrative, YouTubeExportContent } from '../types';
 import { generateYouTubeContent } from '../services/geminiService';
@@ -80,7 +81,7 @@ const YouTubeStudio: React.FC<YouTubeStudioProps> = ({ savedNarratives }) => {
                         <span>Type: {selectedNarrative.type}</span>
                         <span>Length: {selectedNarrative.content.split(' ').length} words</span>
                         {selectedNarrative.imageBase64 && <span className="text-green-500">✓ Image Included</span>}
-                        {selectedNarrative.audioBase64 && <span className="text-blue-400">✓ Audio Included</span>}
+                        {selectedNarrative.audioBase64 && <span className="text-blue-400">✓ Audio Included (WAV)</span>}
                     </div>
                 </div>
             )}

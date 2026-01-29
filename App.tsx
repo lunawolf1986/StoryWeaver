@@ -6,6 +6,7 @@ import Meditation from './features/Meditation';
 import SleepStory from './features/SleepStory';
 import AdStudio from './features/AdStudio';
 import YouTubeStudio from './features/YouTubeStudio';
+import ClassicStories from './features/ClassicStories'; // Import the new component
 import { SavedNarrative, NarrativeType, SeriesIntro } from './types';
 import useLocalStorage from './hooks/useLocalStorage';
 import SavedNarrativesDropdown from './components/SavedNarrativesDropdown';
@@ -14,7 +15,7 @@ import { TaskProvider } from './contexts/TaskContext';
 import TaskManager from './components/TaskManager';
 import ApiKeySelector from './components/ApiKeySelector';
 
-type Tab = 'story' | 'meditation' | 'sleep' | 'ad' | 'youtube';
+type Tab = 'story' | 'meditation' | 'sleep' | 'ad' | 'youtube' | 'classic'; // Add 'classic' tab
 
 const TabButton: React.FC<{
   label: string;
@@ -130,6 +131,7 @@ const App: React.FC = () => {
       case 'sleep': return <SleepStory {...commonProps} savedNarratives={savedNarratives} />;
       case 'ad': return <AdStudio {...commonProps} />;
       case 'youtube': return <YouTubeStudio savedNarratives={savedNarratives} />;
+      case 'classic': return <ClassicStories />; {/* New ClassicStories component */}
       default: return <StoryWeaver {...commonProps} savedNarratives={savedNarratives} seriesIntros={seriesIntros} onSaveIntro={handleSaveIntro} />;
     }
   };
@@ -154,6 +156,7 @@ const App: React.FC = () => {
           <TabButton onClick={() => setActiveTab('meditation')} isActive={activeTab === 'meditation'} label="Meditation" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 003 5.5v2.879a2.5 2.5 0 00.732 1.767l2.5 2.5a2.5 2.5 0 003.536 0l2.5-2.5A2.5 2.5 0 0013 8.379V5.5A2.5 2.5 0 0010.5 3h-5zm1 5.121a.5.5 0 00-.707 0l-2.5 2.5a.5.5 0 000 .707l2.5 2.5a.5.5 0 00.707 0l2.5-2.5a.5.5 0 000-.707l-2.5-2.5zM10 5a.5.5 0 01.5.5v3.793a.5.5 0 01-.146.353l-2.5 2.5a.5.5 0 01-.708-.707L9.5 8.707V5.5A.5.5 0 0110 5zm3.293 2.793a.5.5 0 010 .707l-2.5 2.5a.5.5 0 01-.707 0l-2.5-2.5a.5.5 0 01.707-.707L10 9.793l1.793-1.793a.5.5 0 01.707 0z" clipRule="evenodd" /></svg>} />
           <TabButton onClick={() => setActiveTab('sleep')} isActive={activeTab === 'sleep'} label="Sleep Story" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg>} />
           <TabButton onClick={() => setActiveTab('ad')} isActive={activeTab === 'ad'} label="Ad Studio" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" /></svg>} />
+          <TabButton onClick={() => setActiveTab('classic')} isActive={activeTab === 'classic'} label="Image Forge" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>} />
         </div>
         {renderContent()}
         <TaskManager />

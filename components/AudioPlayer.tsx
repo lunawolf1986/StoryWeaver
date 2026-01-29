@@ -6,10 +6,6 @@ interface AudioPlayerProps {
   isLoading: boolean;
   isReady: boolean;
   isStreaming?: boolean;
-  isEncoding?: boolean; // For explicit download (finalization)
-  isMp3BackgroundEncoding?: boolean; // For continuous background encoding
-  mp3BackgroundEncodingProgress?: number; // Background encoding progress
-  isMp3Ready?: boolean; // Is MP3 ready for immediate download?
   duration: number;
   currentTime: number;
   error: string | null;
@@ -18,10 +14,9 @@ interface AudioPlayerProps {
   onSeek: (time: number) => void;
   stop: () => void;
   downloadWav?: (filename: string) => void;
-  downloadMp3?: (filename: string) => Promise<void>;
+  downloadMp3?: (filename: string) => Promise<void>; // Retain prop signature for now, though function will be a no-op
   hasAudioData?: boolean;
   loadingText?: string;
-  downloadSegment?: () => void;
   segmentLabel?: string;
 }
 
@@ -36,10 +31,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   isLoading,
   isReady,
   isStreaming,
-  isEncoding,
-  isMp3BackgroundEncoding,
-  mp3BackgroundEncodingProgress,
-  isMp3Ready,
   duration,
   currentTime,
   error,
@@ -48,7 +39,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   onSeek,
   stop,
   downloadWav,
-  downloadMp3,
+  downloadMp3, // This function will be a no-op in useAudio.ts
   hasAudioData,
   loadingText = "Preparing Voice...",
   segmentLabel,
@@ -58,11 +49,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     currentTime,
     duration,
   ]);
-
-  const handleDownloadMp3 = async () => {
-    if (!downloadMp3) return;
-    await downloadMp3('narration.mp3');
-  };
 
   if (isLoading) {
     return (
@@ -99,14 +85,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
             {segmentLabel && (
                 <span className="text-[10px] text-indigo-400 font-bold uppercase mt-1">Source: {segmentLabel}</span>
             )}
-            {isMp3BackgroundEncoding && mp3BackgroundEncodingProgress !== undefined && mp3BackgroundEncodingProgress < 100 && (
-              <div className="flex items-center gap-2 mt-1">
-                <svg className="animate-spin h-3 w-3 text-emerald-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-300">
-                  Preparing MP3 ({mp3BackgroundEncodingProgress}%)
-                </span>
-              </div>
-            )}
           </div>
           <div className="flex items-center gap-4">
             {hasAudioData && !isStreaming && (
@@ -120,12 +98,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   WAV
                 </button>
                 <button 
-                  onClick={handleDownloadMp3} 
-                  disabled={isEncoding || !isMp3Ready} // Disable if foreground encoding or background not ready
+                  onClick={() => downloadMp3?.('narration.mp3')} 
                   className="px-2.5 py-1 text-[10px] bg-gray-700 hover:bg-indigo-600 text-gray-200 hover:text-white rounded font-bold uppercase transition-all disabled:opacity-50 flex items-center gap-1"
+                  title="MP3 download not available in this version."
+                  disabled={true} // MP3 download is removed for now
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-                  {isEncoding ? 'Processing...' : (isMp3Ready ? 'MP3' : 'MP3 (Preparing)')}
+                  MP3 (Unavailable)
                 </button>
               </div>
             )}

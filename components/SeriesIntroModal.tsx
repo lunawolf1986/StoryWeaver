@@ -30,12 +30,13 @@ const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, se
   const [error, setError] = useState('');
 
   // Audio State
-  const { loadAudio, unloadAudio, seek, downloadWav, downloadMp3, stop, isMp3BackgroundEncoding, mp3BackgroundEncodingProgress, isMp3Ready, ...audioPlayerProps } = useAudio();
+  // Fix: Updated useAudio destructuring to reflect AudioControls interface changes, removed MP3 specific props
+  const { loadAudio, unloadAudio, seek, downloadWav, downloadMp3, stop, ...audioPlayerProps } = useAudio();
   const { isReady, error: audioError } = audioPlayerProps;
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
-  // FIX: Changed state type from `string | string[] | null` to `string | null` because `generateAudio` returns a single string.
   const [generatedAudioB64, setGeneratedAudioB64] = useState<string | null>(existingIntro?.audioBase64 || null);
-  const [audioGenerationProgress, setAudioGenerationProgress] = useState<number | null>(null);
+  // Removed audioGenerationProgress as it was tied to chunked audio generation
+  // const [audioGenerationProgress, setAudioGenerationProgress] = useState<number | null>(null);
 
   // Load existing audio when modal opens
   useEffect(() => {
@@ -74,18 +75,19 @@ const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, se
   const handleGenerateAudio = async () => {
     if (!script) return;
     setIsGeneratingAudio(true);
-    setAudioGenerationProgress(0);
+    // setAudioGenerationProgress(0); // Removed
     setError('');
     
     try {
-        const audioB64 = await generateAudio(script, voice, setAudioGenerationProgress);
+        // Fix: Removed onProgress callback as it's not supported by the current generateAudio service
+        const audioB64 = await generateAudio(script, voice); 
         setGeneratedAudioB64(audioB64);
         await loadAudio(audioB64);
     } catch (e: any) {
         setError(`Audio generation failed: ${e.message}`);
     } finally {
         setIsGeneratingAudio(false);
-        setAudioGenerationProgress(null);
+        // setAudioGenerationProgress(null); // Removed
     }
   };
 
@@ -167,23 +169,20 @@ const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, se
                         
                         <div className="text-center">
                             <Button onClick={handleGenerateAudio} disabled={!script || isBusy} className="flex items-center justify-center gap-2">
-                                {isGeneratingAudio ? <><Spinner /><span>{`Generating Audio (${audioGenerationProgress ?? 0}%)`}</span></> : 'Generate Narration'}
+                                {isGeneratingAudio ? <><Spinner /><span>Generating Audio...</span></> : 'Generate Narration'}
                             </Button>
                         </div>
 
-                        {(isReady || isGeneratingAudio || audioPlayerProps.isLoading || audioError || isMp3BackgroundEncoding) && (
+                        {(isReady || isGeneratingAudio || audioPlayerProps.isLoading || audioError) && (
                             <div className="pt-2">
                                 <AudioPlayer
                                     {...audioPlayerProps}
                                     isLoading={isGeneratingAudio || audioPlayerProps.isLoading}
-                                    loadingText={isGeneratingAudio ? `Generating Audio... (${audioGenerationProgress ?? 0}%)` : 'Preparing Audio...'}
+                                    loadingText={isGeneratingAudio ? `Generating Audio...` : 'Preparing Audio...'}
                                     onSeek={seek}
                                     downloadWav={handleDownloadWav}
                                     downloadMp3={handleDownloadMp3}
                                     stop={stop}
-                                    isMp3BackgroundEncoding={isMp3BackgroundEncoding}
-                                    mp3BackgroundEncodingProgress={mp3BackgroundEncodingProgress}
-                                    isMp3Ready={isMp3Ready}
                                 />
                             </div>
                         )}

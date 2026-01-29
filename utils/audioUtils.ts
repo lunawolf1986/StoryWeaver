@@ -1,8 +1,5 @@
 
-
-// This file is no longer used. Its contents have been inlined into useAudio.ts
-// for better control over the Web Worker lifecycle and to avoid module import issues.
-// The code has been replaced by MP3_WORKER_SCRIPT constant in useAudio.ts.
+// This file provides utility functions for audio processing, used by hooks/useAudio.ts.
 
 export function decodeBase64(base64: string): Uint8Array {
   // A robust base64 decoder that handles URL-safe characters and missing padding.
@@ -35,25 +32,8 @@ export function encodeToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-export async function decodeAudioData(
-  data: Uint8Array,
-  ctx: AudioContext,
-  sampleRate: number,
-  numChannels: number,
-): Promise<AudioBuffer> {
-  // PCM data is Int16 (2 bytes per sample)
-  const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.byteLength / 2);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
-  }
-  return buffer;
-}
+// decodeAudioData is no longer used by useAudio.ts
+// It was removed to simplify the audio pipeline and remove AudioContext dependencies.
 
 function writeString(view: DataView, offset: number, str: string) {
   for (let i = 0; i < str.length; i++) {

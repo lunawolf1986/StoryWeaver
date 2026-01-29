@@ -1,5 +1,4 @@
 
-
 // Define types for story genres
 export type StoryGenre = string;
 
@@ -27,9 +26,6 @@ export const FANDOM_CATEGORIES: Record<string, string[]> = {
 };
 
 export const STORY_FANDOMS: StoryFandom[] = Object.values(FANDOM_CATEGORIES).flat().sort();
-
-// Removed WritingStyle type and WRITING_STYLES constant
-// Removed NarrativeIntensity type and NARRATIVE_INTENSITIES constant
 
 export type MeditationFocus = 'Relaxation' | 'Stress Relief' | 'Focus' | 'Sleep' | 'Mindfulness' | 'Loving-Kindness' | 'Visualization';
 export const MEDITATION_FOCUSES: MeditationFocus[] = ['Mindfulness', 'Relaxation', 'Stress Relief', 'Focus', 'Sleep', 'Loving-Kindness', 'Visualization'];
@@ -197,4 +193,14 @@ export interface Task {
   partialResult?: string;
   retryCount?: number;
   cooldownUntil?: string;
+}
+
+// Image Generation Types
+export type ImageAspectRatio = "1:1" | "3:4" | "4:3" | "9:16" | "16:9";
+export type ImageSize = "1K" | "2K" | "4K";
+
+export interface ImageGenConfig {
+  aspectRatio?: ImageAspectRatio;
+  imageSize?: ImageSize;
+  model?: string;
 }
