@@ -118,7 +118,7 @@ export const generateStory = async (
   genre: StoryGenre,
   genre2: StoryGenre,
   genre3: StoryGenre,
-  genre4: StoryGenre, // Added 4th genre
+  genre4: StoryGenre,
   fandom1: StoryFandom,
   fandom2: StoryFandom,
   characters: StoryCharacter[],
@@ -212,15 +212,18 @@ export const analyzeStory = async (story: string): Promise<AnalysisResult> => {
     model: ANALYSIS_MODEL,
     contents: story.slice(-8000),
     config: {
-      systemInstruction: "Strict JSON analysis. No bolding.",
+      systemInstruction: "You are a professional book editor. Perform a deep structural, stylistic, and character analysis of the provided text. Output JSON only. No bolding in strings.",
       responseMimeType: "application/json",
-      maxOutputTokens: 1500,
-      thinkingConfig: { thinkingBudget: 500 },
+      maxOutputTokens: 2000,
+      thinkingConfig: { thinkingBudget: 1000 },
       responseSchema: {
         type: Type.OBJECT,
         properties: {
           critique: { type: Type.STRING },
           vocabularyScore: { type: Type.NUMBER },
+          characterAnalysis: { type: Type.STRING },
+          pacingAnalysis: { type: Type.STRING },
+          vocabularyAnalysis: { type: Type.STRING },
           plotStructure: {
             type: Type.OBJECT,
             properties: {
@@ -246,7 +249,7 @@ export const analyzeStory = async (story: string): Promise<AnalysisResult> => {
             }
           }
         },
-        required: ["critique", "vocabularyScore", "plotStructure", "suggestions"]
+        required: ["critique", "vocabularyScore", "plotStructure", "suggestions", "characterAnalysis", "pacingAnalysis", "vocabularyAnalysis"]
       }
     }
   }));
@@ -412,15 +415,17 @@ export const analyzePrompt = async (prompt: string): Promise<PromptAnalysisResul
     model: ANALYSIS_MODEL,
     contents: prompt,
     config: {
-      systemInstruction: "Analyze story prompt. JSON. No bolding. In the 'refinedPrompt' field, provide a rewritten, much better, highly evocative version of the user's input.",
+      systemInstruction: "Analyze story prompt. JSON output only. No bolding. Provide a rewritten version and deep analysis of narrative potential.",
       responseMimeType: "application/json",
-      maxOutputTokens: 1000,
-      thinkingConfig: { thinkingBudget: 250 },
+      maxOutputTokens: 1500,
+      thinkingConfig: { thinkingBudget: 500 },
       responseSchema: {
         type: Type.OBJECT,
         properties: {
           suggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
           refinedPrompt: { type: Type.STRING, description: "A high-quality, rewritten version of the input." },
+          narrativeStructureSuggestions: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Specific ideas for plot arcs." },
+          characterDevelopmentSuggestions: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Specific ideas for character growth." },
           feedback: {
             type: Type.OBJECT,
             properties: {
@@ -433,7 +438,7 @@ export const analyzePrompt = async (prompt: string): Promise<PromptAnalysisResul
             required: ["strengths", "weaknesses", "plotHoles", "characterConsistency", "pacing"]
           }
         },
-        required: ["suggestions", "refinedPrompt", "feedback"]
+        required: ["suggestions", "refinedPrompt", "feedback", "narrativeStructureSuggestions", "characterDevelopmentSuggestions"]
       }
     }
   }));
@@ -443,6 +448,8 @@ export const analyzePrompt = async (prompt: string): Promise<PromptAnalysisResul
     return { 
         suggestions: [], 
         refinedPrompt: prompt, 
+        narrativeStructureSuggestions: [],
+        characterDevelopmentSuggestions: [],
         feedback: { strengths: "N/A", weaknesses: "N/A", plotHoles: "N/A", characterConsistency: "N/A", pacing: "N/A" } 
     };
   }

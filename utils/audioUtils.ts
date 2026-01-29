@@ -3,11 +3,8 @@
 
 export function decodeBase64(base64: string): Uint8Array {
   // A robust base64 decoder that handles URL-safe characters and missing padding.
-  let paddedBase64 = base64.replace(/-/g, '+').replace(/_/g, '/');
-  while (paddedBase64.length % 4) {
-    paddedBase64 += '=';
-  }
-
+  const paddedBase64 = base64.replace(/-/g, '+').replace(/_/g, '/');
+  
   try {
     const binaryString = atob(paddedBase64);
     const len = binaryString.length;
@@ -22,19 +19,6 @@ export function decodeBase64(base64: string): Uint8Array {
   }
 }
 
-export function encodeToBase64(bytes: Uint8Array): string {
-  const CHUNK_SIZE = 8192;
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
-    const chunk = bytes.subarray(i, i + CHUNK_SIZE);
-    binary += String.fromCharCode.apply(null, chunk as any);
-  }
-  return btoa(binary);
-}
-
-// decodeAudioData is no longer used by useAudio.ts
-// It was removed to simplify the audio pipeline and remove AudioContext dependencies.
-
 function writeString(view: DataView, offset: number, str: string) {
   for (let i = 0; i < str.length; i++) {
     view.setUint8(offset + i, str.charCodeAt(i));
@@ -44,10 +28,14 @@ function writeString(view: DataView, offset: number, str: string) {
 export function createWavFileFromChunks(audioDataChunks: Uint8Array[], sampleRate: number, numChannels: number = 1): Blob {
     const totalDataSize = audioDataChunks.reduce((acc, chunk) => acc + chunk.byteLength, 0);
     const headerLength = 44;
-    const buffer = new ArrayBuffer(headerLength);
-    const view = new DataView(buffer);
     const totalLength = totalDataSize + headerLength;
+    
+    // Use a single buffer for the entire WAV file for maximum performance
+    const wavBuffer = new ArrayBuffer(totalLength);
+    const view = new DataView(wavBuffer);
+    const uint8View = new Uint8Array(wavBuffer);
 
+    // RIFF header
     writeString(view, 0, 'RIFF');
     view.setUint32(4, totalLength - 8, true);
     writeString(view, 8, 'WAVE');
@@ -62,7 +50,14 @@ export function createWavFileFromChunks(audioDataChunks: Uint8Array[], sampleRat
     writeString(view, 36, 'data');
     view.setUint32(40, totalDataSize, true);
 
-    return new Blob([view, ...audioDataChunks], { type: 'audio/wav' });
+    // Efficiently copy PCM data into the buffer
+    let offset = headerLength;
+    for (const chunk of audioDataChunks) {
+        uint8View.set(chunk, offset);
+        offset += chunk.byteLength;
+    }
+
+    return new Blob([wavBuffer], { type: 'audio/wav' });
 }
 
 export function generateFilename(text: string, extension: string): string {

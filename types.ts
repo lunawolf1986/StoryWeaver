@@ -22,6 +22,7 @@ export const FANDOM_CATEGORIES: Record<string, string[]> = {
   "Anime & Manga": ["Attack on Titan", "Berserk", "Cowboy Bebop", "Demon Slayer", "Dragon Ball", "Fullmetal Alchemist", "My Hero Academia", "Naruto", "One Piece", "Spy x Family", "Jujutsu Kaisen", "Bleach", "Hunter x Hunter", "Death Note", "JoJo's Bizarre Adventure", "Neon Genesis Evangelion", "Chainsaw Man"],
   "Video Games": ["Baldur's Gate", "Call of Duty", "Cyberpunk 2077", "Elden Ring", "Fallout", "Final Fantasy", "The Legend of Zelda", "Mass Effect", "The Witcher", "Halo", "Resident Evil", "God of War", "Dragon Age", "Horizon Zero Dawn", "Metal Gear Solid", "Dark Souls", "Bloodborne", "Genshin Impact", "Persona"],
   "Movies & TV": ["Avatar", "Doctor Who", "Game of Thrones", "Marvel Universe", "Star Trek", "Star Wars", "Stranger Things", "The Walking Dead", "DC Universe", "Indiana Jones", "Jurassic Park", "Pirates of the Caribbean", "Breaking Bad", "The Boys", "Supernatural", "Twin Peaks", "The Last of Us", "The Witcher (Netflix Series)", "Twilight (Movies)"],
+  "Movies & TV 2": ["One Piece (Live Action)", "Lord of the Rings (TV)", "The Mandalorian", "The Bear", "Succession", "Squid Game", "Euphoria", "The Crown", "Bridgerton", "Better Call Saul", "The Sandman", "The Wheel of Time (TV)", "Yellowstone", "Ted Lasso"],
   "Books & Literature": ["Dune", "Harry Potter", "Lord of the Rings", "Sherlock Holmes", "The Wheel of Time", "The Stormlight Archive", "Mistborn", "The Chronicles of Narnia", "Discworld", "Percy Jackson", "Cthulhu Mythos", "The Witcher (Books)", "Grishaverse", "Twilight (Books)"]
 };
 
@@ -77,15 +78,59 @@ export const VOICE_OPTIONS = [
   { id: 'Fenrir', name: 'Fenrir' }
 ];
 
-export type PlotTwistType = 'The Betrayal' | 'The False Protagonist' | 'The "It Was All a Dream"' | 'The Hidden Villain' | 'The Time Loop' | 'The Identity Swap';
+export type PlotTwistType = 
+    | 'The Betrayal' 
+    | 'The False Protagonist' 
+    | 'The "It Was All a Dream"' 
+    | 'The Hidden Villain' 
+    | 'The Time Loop' 
+    | 'The Identity Swap'
+    | 'The Unreliable Narrator'
+    | 'The Secret Legacy'
+    | 'The Dead All Along'
+    | 'The Monster Within'
+    | 'The Prophecy Subversion'
+    | 'The Artificial Reality'
+    | 'The Parallel Mirror'
+    | 'The Sudden Sacrifice'
+    | 'The Forgotten Memory'
+    | 'The Enemy of My Enemy'
+    | 'The Cosmic Horror Twist'
+    | 'The Reincarnation Revelation'
+    | 'The Moral Decay'
+    | 'The Technological Glitch'
+    | 'The Supernatural Pact'
+    | 'The Silent Witness'
+    | 'The Unintended Consequence'
+    | 'The Grand Design';
+
 export interface PlotTwistDetail { type: PlotTwistType; description: string; icon: string; }
+
 export const PLOT_TWIST_DETAILS: PlotTwistDetail[] = [
-    { type: 'The Betrayal', icon: '⚔️', description: 'A trusted ally reveals their true colors.' },
-    { type: 'The False Protagonist', icon: '👤', description: 'Focus shifts unexpectedly to another character.' },
-    { type: 'The "It Was All a Dream"', icon: '💭', description: 'Reality is revealed as a simulation.' },
-    { type: 'The Hidden Villain', icon: '🎭', description: 'The real threat was pulling strings from shadows.' },
-    { type: 'The Time Loop', icon: '⏳', description: 'Events start repeating.' },
-    { type: 'The Identity Swap', icon: '🔁', description: 'Two characters have switched roles.' }
+    { type: 'The Betrayal', icon: '⚔️', description: 'A trusted ally reveals their true colors and turns against the protagonist.' },
+    { type: 'The False Protagonist', icon: '👤', description: 'Focus shifts unexpectedly from the supposed hero to an unlikely secondary character.' },
+    { type: 'The Hidden Villain', icon: '🎭', description: 'The real threat was pulling strings from the shadows, hiding in plain sight.' },
+    { type: 'The Unreliable Narrator', icon: '👁️', description: 'The current perspective is revealed to be skewed, delusional, or intentionally lying.' },
+    { type: 'The Time Loop', icon: '⏳', description: 'Events start repeating, revealing that the characters are trapped in a temporal prison.' },
+    { type: 'The Identity Swap', icon: '🔁', description: 'Two key characters are revealed to have switched roles or bodies long ago.' },
+    { type: 'The Secret Legacy', icon: '👑', description: 'A character discovers a hidden bloodline or inheritance that shifts their entire motivation.' },
+    { type: 'The Dead All Along', icon: '👻', description: 'A key character is revealed to have been a ghost or a figment of imagination the entire time.' },
+    { type: 'The Monster Within', icon: '👹', description: 'The protagonist realizes they are actually the very creature or villain they were hunting.' },
+    { type: 'The Prophecy Subversion', icon: '📜', description: 'The ancient prophecy was true, but its meaning was catastrophically misinterpreted.' },
+    { type: 'The Artificial Reality', icon: '🧊', description: 'The entire world is revealed to be a simulation, a dream, or an elaborate digital construct.' },
+    { type: 'The Parallel Mirror', icon: '🪞', description: 'An alternate, dark version of the protagonist arrives from a parallel timeline.' },
+    { type: 'The Sudden Sacrifice', icon: '🕯️', description: 'Victory requires a cost no one expected, demanding the ultimate sacrifice from an unlikely source.' },
+    { type: 'The Forgotten Memory', icon: '🧠', description: 'A repressed memory resurfaces, proving everything the characters believed was a lie.' },
+    { type: 'The Enemy of My Enemy', icon: '🤝', description: 'The primary antagonist is forced to team up with the hero to stop an even greater threat.' },
+    { type: 'The Cosmic Horror Twist', icon: '🐙', description: 'The conflict is revealed to be a tiny, insignificant part of a massive, indifferent cosmic game.' },
+    { type: 'The Reincarnation Revelation', icon: '♻️', description: 'The current conflict is actually a continuation of a war fought between the characters in past lives.' },
+    { type: 'The Moral Decay', icon: '🥀', description: 'The "good guys" have committed an atrocity in the past that invalidates their current moral high ground.' },
+    { type: 'The Technological Glitch', icon: '⚡', description: 'A minor technical failure in a futuristic tool leads to a catastrophic, world-changing outcome.' },
+    { type: 'The Supernatural Pact', icon: '🖋️', description: 'The protagonist discovers their success was actually bought by an ancestor who made a deal with an eldritch entity.' },
+    { type: 'The Silent Witness', icon: '🐦', description: 'An overlooked, non-speaking character or animal is revealed to have understood everything and has been manipulating events.' },
+    { type: 'The Unintended Consequence', icon: '🦋', description: 'The hero’s very first "good deed" is revealed to be the direct cause of the current villain’s origin.' },
+    { type: 'The Grand Design', icon: '🕸️', description: 'Every character, including the villain, is revealed to be a puppet in a much larger game being played by gods or AIs.' },
+    { type: 'The "It Was All a Dream"', icon: '💭', description: 'The stakes are reset as the character wakes up, but with a lingering, terrifying physical artifact from the dream.' }
 ];
 
 export interface StoryCharacter { id: string; name: string; description: string; }
@@ -118,6 +163,8 @@ export interface YouTubeExportContent { title: string; description: string; vide
 export interface PromptAnalysisResult { 
     suggestions: string[]; 
     refinedPrompt: string;
+    narrativeStructureSuggestions: string[];
+    characterDevelopmentSuggestions: string[];
     feedback: { strengths: string; weaknesses: string; plotHoles: string; characterConsistency: string; pacing: string; }; 
 }
 
@@ -154,7 +201,7 @@ export const STORY_ARCHETYPES = [
       { name: 'Tragic Villain', description: 'A primary antagonist whose evil stems from a deep personal loss or betrayal.' },
       { name: 'The Pure Evil', description: 'A force of nature with no redeeming qualities, seeking total destruction or power.' },
       { name: 'The Mirror Reflection', description: 'Possesses all the hero\'s strengths but lacks their moral compass; the "what if" version of the hero.' }
-    ]
+    ] 
   },
   {
     name: 'The Shapeshifter',

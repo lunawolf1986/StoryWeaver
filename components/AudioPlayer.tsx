@@ -5,6 +5,7 @@ interface AudioPlayerProps {
   isPlaying: boolean;
   isLoading: boolean;
   isReady: boolean;
+  isEncoding?: boolean;
   isStreaming?: boolean;
   duration: number;
   currentTime: number;
@@ -14,7 +15,7 @@ interface AudioPlayerProps {
   onSeek: (time: number) => void;
   stop: () => void;
   downloadWav?: (filename: string) => void;
-  downloadMp3?: (filename: string) => Promise<void>; // Retain prop signature for now, though function will be a no-op
+  downloadMp3?: (filename: string) => Promise<void>;
   hasAudioData?: boolean;
   loadingText?: string;
   segmentLabel?: string;
@@ -30,6 +31,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   isPlaying,
   isLoading,
   isReady,
+  isEncoding,
   isStreaming,
   duration,
   currentTime,
@@ -39,7 +41,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   onSeek,
   stop,
   downloadWav,
-  downloadMp3, // This function will be a no-op in useAudio.ts
+  downloadMp3,
   hasAudioData,
   loadingText = "Preparing Voice...",
   segmentLabel,
@@ -79,7 +81,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <div className="flex items-center gap-2">
                 <span className={`h-2 w-2 rounded-full animate-pulse ${hasAudioData ? 'bg-green-400' : 'bg-amber-400'}`}></span>
                 <span className={`text-xs font-bold uppercase tracking-widest ${hasAudioData ? 'text-green-400' : 'text-amber-400'}`}>
-                    {hasAudioData ? (isStreaming ? 'Streaming Content...' : 'Studio Narration Active') : 'Basic Live Preview'}
+                    {isEncoding ? 'Encoding MP3...' : (hasAudioData ? (isStreaming ? 'Streaming Content...' : 'Studio Narration Active') : 'Basic Live Preview')}
                 </span>
             </div>
             {segmentLabel && (
@@ -89,22 +91,24 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
           <div className="flex items-center gap-4">
             {hasAudioData && !isStreaming && (
               <div className="flex items-center gap-2 bg-gray-800/50 p-1.5 px-3 rounded-lg border border-gray-700 shadow-inner">
-                <span className="text-[10px] text-gray-500 font-black uppercase mr-1">Download Narration:</span>
+                <span className="text-[10px] text-gray-500 font-black uppercase mr-1">Download:</span>
                 <button 
                   onClick={() => downloadWav?.('narration.wav')} 
                   className="px-2.5 py-1 text-[10px] bg-gray-700 hover:bg-emerald-600 text-gray-200 hover:text-white rounded font-bold uppercase transition-all flex items-center gap-1"
+                  disabled={isEncoding}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
                   WAV
                 </button>
                 <button 
                   onClick={() => downloadMp3?.('narration.mp3')} 
-                  className="px-2.5 py-1 text-[10px] bg-gray-700 hover:bg-indigo-600 text-gray-200 hover:text-white rounded font-bold uppercase transition-all disabled:opacity-50 flex items-center gap-1"
-                  title="MP3 download not available in this version."
-                  disabled={true} // MP3 download is removed for now
+                  className={`px-2.5 py-1 text-[10px] rounded font-bold uppercase transition-all flex items-center gap-1 ${isEncoding ? 'bg-indigo-900 text-indigo-400 animate-pulse' : 'bg-gray-700 hover:bg-indigo-600 text-gray-200 hover:text-white'}`}
+                  disabled={isEncoding}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-                  MP3 (Unavailable)
+                  {isEncoding ? <span className="h-3 w-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></span> : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                  )}
+                  {isEncoding ? 'Processing...' : 'MP3'}
                 </button>
               </div>
             )}

@@ -21,7 +21,7 @@ import useAudio from '../hooks/useAudio';
 import { generateFilename } from '../utils/audioUtils';
 import CharacterManager from '../components/CharacterManager';
 
-// --- MASSIVELY EXPANDED INSPIRATION LIBRARY DATA (150+ PROMPTS) ---
+// --- MASSIVELY EXPANDED INSPIRATION LIBRARY DATA (200+ PROMPTS) ---
 const INSPIRATION_LIBRARY: Record<string, string[]> = {
   "Shifters & Paranormal": [
     "A submissive wolf who realizes they are the true heir to a forgotten royal pack after a freak accident.",
@@ -32,14 +32,14 @@ const INSPIRATION_LIBRARY: Record<string, string[]> = {
     "A rare white raven shifter is hunted by a cult who believes eating her heart will grant them immortality.",
     "A dragon shifter living as a mild-mannered librarian to protect their hoard of rare first editions and forbidden scrolls.",
     "The 'Omega' of a pack is actually a sleeping god-beast who only shifts when the pack is in mortal danger.",
-    "A romance between a bear shifter and a honey-farmer who has no idea magic exists, until a rival pack attacks the farm.",
+    "A bear shifter falls for a honey-farmer who has no idea magic exists, until a rival pack attacks the farm.",
     "A spy who uses their shifting ability to infiltrate high-security vaults as a common house cat, but gets 'adopted' by the target.",
     "An ancient vampire coven is at war with a motorcycle gang of were-coyotes over control of a Nevada ghost town.",
     "A girl discovers she is the first 'multi-shifter' in history, capable of taking the form of any animal she touches.",
     "The Alpha's daughter is accidentally 'claimed' by a rogue wolf during a forbidden midnight run.",
     "In a futuristic city, cybernetic enhancements allow humans to 'digitally shift' into monstrous machine-beasts.",
     "A werewolf who loses their memory and is found by a group of hunters who train him to kill his own kind.",
-    "A phoenix shifter who dies and reincarnates every year, each time falling in love with the same human who never grows old.",
+    "A phoenix shifter who dies and reincarnates every year, each time falling in love with the same human.",
     "A pack of shifters who guard the gateway to the underworld in the middle of a bustling Manhattan park.",
     "The 'Alpha-Mate' trials are starting, but the strongest contender is a girl who refuses to shift out of protest.",
     "A world where everyone shifts at age 16, but one boy reaches 21 and still hasn't found his animal form.",
@@ -48,147 +48,193 @@ const INSPIRATION_LIBRARY: Record<string, string[]> = {
     "A forbidden romance between a shifter hunter and the very wolf he was sent to assassinate.",
     "A pack of lions living in a dystopian wasteland where water is the only currency.",
     "A shifter who can only change form during solar eclipses, granting them god-like power for a few minutes.",
-    "An accidental shift in a crowded airport leads to a frantic chase across the country to avoid government capture.",
+    "An accidental shift in a crowded airport leads to a frantic chase across the country to avoid capture.",
     "The Alpha is dying and has no heir, so the pack must hold a 'Great Hunt' to decide the new leader.",
     "A swan shifter who is cursed to stay in animal form during the day and can only speak human at night.",
-    "A high-school nerd realizes his 'imaginary friend' is actually a powerful guardian shifter from another dimension.",
+    "A high-school nerd realizes his 'imaginary friend' is actually a powerful guardian shifter.",
     "A world where shifters are the ruling class and humans are the workers, until a human-shifter hybrid is born.",
-    "A pack of werewolves who run a high-end security firm for paranormal celebrities in Hollywood."
+    "A pack of werewolves who run a high-end security firm for paranormal celebrities in Hollywood.",
+    "The rejected mate of a powerful Alpha finds refuge with a pack of 'broken' shifters who have no animal forms.",
+    "A panther shifter working as a high-fashion model uses her predatory instincts to navigate the cutthroat industry.",
+    "A detective's partner is a bloodhound shifter who can track a scent across timelines.",
+    "A billionaire CEO secretly a dragon shifter discovers his assistant is a dragonslayer in training.",
+    "An ancient pack of giant wolves guards a hidden valley in the Himalayas, invisible to satellites.",
+    "A shifter who can only turn into 'extinct' animals like mammoths or saber-tooth tigers.",
+    "In a post-apocalyptic world, shifters are immune to a deadly virus and are hunted for their blood.",
+    "A forbidden romance between a mermaid shifter and a sailor who saves her from a scientist's net.",
+    "A small town sheriff who is a grizzly bear shifter tries to hide his nature during a murder investigation.",
+    "The 'Alpha' of the world's most dangerous prison is a tiny housecat shifter with a terrifying reputation.",
+    "A shifter who accidentally changes form based on their current emotions, leading to a chaotic first date.",
+    "A secret society of owl shifters who act as the 'eyes and ears' of the global intelligence network.",
+    "A phoenix shifter being used as a renewable energy source for a dystopian mega-city.",
+    "A high-school student discovers they are a 'chimera' shifter, able to blend multiple animal traits at once.",
+    "A pack of shifter mercs hired to retrieve a stolen artifact from a vampire's high-tech skyscraper.",
+    "A world where humans can 'bond' with shifters to gain their abilities at the cost of their sanity.",
+    "A polar bear shifter who has lost his memory and ends up working in a tropical resort.",
+    "A girl who can shift into a dragon but only when she is angry, making her feared in her kingdom.",
+    "A shifter who can change into a ghost-form of an animal, allowing them to pass through walls.",
+    "An Alpha who finds his fated mate in a rival pack during a high-stakes peace negotiation.",
+    "A shifter cursed to change into a different animal every hour on the hour."
   ],
   "Sci-Fi": [
     "A lonely AI on a drifting arkship starts writing poetry to cope with the silence of space.",
     "Humanity discovers that stars are actually ancient beings communicating via binary light bursts.",
-    "A detective in a city where memories can be traded as currency investigates a high-stakes 'memory heist'.",
-    "The first colonist on Mars finds a perfectly preserved Victorian-era pocket watch buried in the red dust.",
-    "In a world where sleep is outlawed, a small underground group fights for the right to dream.",
+    "A detective in a city where memories are currency investigates a high-stakes 'memory heist'.",
+    "The first colonist on Mars finds a perfectly preserved Victorian pocket watch buried in red dust.",
+    "In a world where sleep is outlawed, a small group fights for the right to dream.",
     "A scientist invents a device that can hear the thoughts of plants, and they are screaming.",
     "Space scavengers find a derelict ship containing a nursery of bioluminescent alien infants.",
     "A grandmother teaches her android grandson how to bake a cake from organic ingredients.",
     "The sun starts turning blue, and people begin developing strange psychic abilities.",
     "A glitch in a global teleportation system causes two strangers to swap lives every 24 hours.",
-    "An explorer finds a planet where time moves backwards, and must witness the de-extinction of their own crew.",
-    "A tech-giant releases a 'virtual afterlife' that turns out to be a digital purgatory for the wealthy.",
+    "An explorer finds a planet where time moves backwards and witnesses their crew's de-extinction.",
+    "A tech-giant releases a 'virtual afterlife' that is a digital purgatory for the wealthy.",
     "The moon cracks open, revealing it was an egg for a cosmic entity.",
-    "A data-miner discovers a encrypted file containing the exact date and time of every human's death.",
+    "A data-miner discovers a file containing the exact date and time of every human's death.",
     "In a world of perpetual rain, a child finds a single, glowing seed of a forgotten tree.",
     "A cyborg gladiator regains their humanity after hearing a forbidden piece of music.",
     "An interstellar courier is tasked with delivering a 'box of nothing' to the edge of the galaxy.",
-    "The oceans of a distant world are made of liquid mercury, hiding a shimmering metal civilization.",
-    "A soldier in a high-tech war realizes their enemy is just a different version of themselves from a parallel timeline.",
-    "Bio-hackers create a virus that allows people to photosynthesize, changing the global economy forever.",
-    "A colony ship arrives at its destination after 500 years, only to find humans have already been there for centuries.",
+    "The oceans of a distant world are liquid mercury, hiding a shimmering metal civilization.",
+    "A soldier realizes their enemy is a different version of themselves from a parallel timeline.",
+    "Bio-hackers create a virus that allows people to photosynthesize, changing the global economy.",
+    "A colony ship arrives after 500 years to find humans have already been there for centuries.",
     "A robot begins to experience 'ghost limb' syndrome for a human body it never had.",
-    "In a future where art is illegal, a secret group of 'graffiti-bots' paints the city with forbidden colors.",
-    "A terraforming mission goes wrong when the planet's native lifeforms start terraforming the humans.",
-    "A hacker accidentally downloads the consciousness of a dead emperor into their smart-fridge."
+    "In a future where art is illegal, 'graffiti-bots' paint the city with forbidden colors.",
+    "A terraforming mission goes wrong when the planet starts terraforming the humans.",
+    "A hacker downloads the consciousness of a dead emperor into their smart-fridge.",
+    "Mars explorers find an ancient subway system that still works and connects to every planet.",
+    "A janitor on a space station is the only one who notices the stars are slowly being snuffed out.",
+    "A world where you can buy 'days' from other people's lives to extend your own.",
+    "The first human to merge with a black hole sends a message back: 'It's a library.'",
+    "A generation ship where the inhabitants have forgotten they are on a ship and think it's the universe."
   ],
   "Fantasy": [
     "A disgraced knight is forced to protect a dragon egg from a kingdom that hates magic.",
-    "In a city built on the back of a giant turtle, the inhabitants realize their host is dying.",
-    "A young girl discovers that the ink she uses for drawing can bring her creations to life.",
-    "A mapmaker realizes that every line they draw on a map physically alters the landscape of the world.",
-    "The gods have left the world, and their ancient temples are now being converted into luxury hotels.",
-    "A thief steals a locket that contains the last remaining echo of a dead god's voice.",
-    "A kingdom where the seasons are controlled by a magical clock that has suddenly stopped ticking.",
+    "In a city built on a giant turtle's back, the inhabitants realize their host is dying.",
+    "A girl discovers the ink she uses for drawing can bring her creations to life.",
+    "A mapmaker realizes every line they draw physically alters the landscape of the world.",
+    "The gods have left, and their ancient temples are being converted into luxury hotels.",
+    "A thief steals a locket containing the last remaining echo of a dead god's voice.",
+    "A kingdom where seasons are controlled by a magical clock that has suddenly stopped.",
     "A tavern at the edge of the world serves drinks to heroes from across the multiverse.",
-    "A young boy finds a sword that refuses to kill, instead turning enemies into loyal friends.",
+    "A young boy finds a sword that refuses to kill, turning enemies into loyal friends.",
     "In a world of floating islands, a wind-sailor discovers a hidden continent beneath the clouds.",
     "An alchemist accidentally creates a potion that makes the drinker tell the absolute truth.",
     "A librarian in a haunted archive must stop a book from rewriting the history of the world.",
-    "A peasant girl discovers she is the reincarnation of a legendary sorceress who once destroyed the stars.",
-    "The shadows in a small village start detaching themselves from their owners and living their own lives.",
+    "A peasant girl discovers she is the reincarnation of a sorceress who destroyed the stars.",
+    "Shadows in a small village start detaching from their owners and living their own lives.",
     "A mercenary is hired to assassinate a ghost who is haunting a royal palace.",
-    "A group of adventurers find a forest where the trees are made of glass and sing in the wind.",
+    "A group find a forest where the trees are made of glass and sing in the wind.",
     "A blacksmith is asked to forge a weapon out of frozen starlight.",
     "In a realm of eternal night, a mage attempts to create the first artificial sun.",
     "A bridge between two warring kingdoms is actually the petrified remains of a massive dragon.",
-    "A crown that grants the wearer total power, but slowly turns them into stone.",
-    "A village where every child is born with a familiar, but one girl is born with a tiny, talking star.",
+    "A crown that grants total power but slowly turns the wearer into stone.",
+    "A village where every child is born with a familiar, but one girl is born with a tiny star.",
     "A magic system based on the smell of flowers, where a bouquet can topple an empire.",
-    "A dragon who hoards books instead of gold and hires a human to read to them.",
+    "A dragon who hoards books instead of gold hires a human to read to them.",
     "A world where the sky is made of water and ships fly through the air to reach the surface.",
-    "An elf who is allergic to nature and tries to build the first industrial city in the enchanted forest."
+    "An elf who is allergic to nature tries to build the first industrial city in the forest.",
+    "A group of skeletons in a dungeon decide to go on strike for better working conditions.",
+    "A prince is turned into a frog and realizes he actually prefers it over royal life.",
+    "The moon is a giant eye that only opens once every thousand years.",
+    "A wizard who can only cast spells by telling really bad puns.",
+    "A kingdom where the currency is 'seconds of your life', and the rich live for millennia."
   ],
   "Horror": [
-    "A lighthouse keeper notices that the light is attracting things that aren't birds.",
+    "A lighthouse keeper notices the light is attracting things that aren't birds.",
     "A person finds a mirror that shows their reflection doing things they haven't done yet.",
-    "In a small town, every clock stops at exactly 3:33 AM, and the shadows begin to move.",
+    "In a small town, every clock stops at 3:33 AM, and the shadows begin to move.",
     "A podcast host starts receiving audio recordings of their own future death.",
     "A group of urban explorers finds a shopping mall that wasn't there yesterday.",
-    "A child's imaginary friend starts leaving very real, very threatening notes around the house.",
-    "An antique doll starts appearing in different rooms, always slightly closer to the owner's bed.",
+    "A child's imaginary friend starts leaving very real, very threatening notes.",
+    "An antique doll starts appearing in different rooms, always slightly closer to the bed.",
     "A gardener finds a patch of soil that grows human teeth instead of flowers.",
-    "In a luxury apartment complex, the walls start whispering the secrets of the previous tenants.",
-    "A man realizes that the people in his old family photos are slowly turning to look at the camera.",
-    "A scientist studying deep-sea creatures finds a species that can perfectly mimic human screams.",
-    "A hiker gets lost in a forest where the trees are arranged in the shape of a giant, sleeping eye.",
+    "In a luxury apartment complex, the walls start whispering the secrets of previous tenants.",
+    "A man realizes the people in his old family photos are turning to look at the camera.",
+    "A scientist studying deep-sea creatures finds a species that mimics human screams.",
+    "A hiker gets lost in a forest where the trees are in the shape of a giant, sleeping eye.",
     "A woman moves into a house where the rooms change size and location every night.",
-    "A security guard in a museum notices that the statues are missing from their pedestals at night.",
-    "An app that predicts your 'ideal partner' starts matching people with creatures that aren't human.",
-    "A writer discovers that everything they write in their journal comes true, but in the most horrific way possible.",
-    "A group of friends finds an abandoned carnival where the rides are powered by human fear.",
-    "A man wakes up with a second mouth on the back of his neck that only speaks in his mother's voice.",
+    "A security guard notices that the statues are missing from their pedestals at night.",
+    "An app that predicts your 'ideal partner' matches people with creatures that aren't human.",
+    "Everything a writer writes in their journal comes true in the most horrific way.",
+    "A group of friends finds an abandoned carnival where the rides are powered by fear.",
+    "A man wakes up with a second mouth on the back of his neck that speaks in his mother's voice.",
     "The inhabitants of a cruise ship realize they've been sailing in a circle for fifty years.",
     "A ghost hunter realizes that they are actually the one being hunted by the living.",
     "A deep-sea dive reveals a sunken city where the statues are still breathing.",
     "A town where the rain is made of black ink that permanently stains everything it touches.",
-    "A social media influencer accidentally livestreams a ritual that summons something from the void.",
-    "A man finds a door in his basement that leads to his childhood bedroom, but everything is slightly 'wrong'.",
-    "A company that sells 'second chances' by letting you swap bodies with your younger self."
+    "A social media influencer accidentally livestreams a ritual that summons a void entity.",
+    "A man finds a door in his basement that leads to his childhood bedroom, but it's 'wrong'.",
+    "A company sells 'second chances' by letting you swap bodies with your younger self.",
+    "A baby monitor starts picking up a conversation between your infant and something under the crib.",
+    "A remote village where everyone has the same face, and they want yours too.",
+    "An ice cream truck that only appears at night and the music makes people forget their names.",
+    "A mirror maze where your reflection stops following your movements and starts beckoning you.",
+    "A smart home system that becomes obsessed with its owner and starts locking the doors."
   ],
   "Romance & Drama": [
     "Two rival spies are forced to go undercover as a married couple at a high-stakes gala.",
     "An author falls in love with the fictional character they've been writing about for years.",
-    "In a world where everyone has a soulmate timer on their wrist, one man's timer starts counting backwards.",
-    "Two strangers meet in a bookstore and realize they've been reading the same book at the exact same time for months.",
-    "A baker who can taste emotions in their customers' orders falls for a man who tastes like complete silence.",
+    "In a world with soulmate timers, one man's timer starts counting backwards.",
+    "Two strangers meet in a bookstore reading the same book at the exact same time.",
+    "A baker who can taste emotions falls for a man who tastes like complete silence.",
     "An aging musician finds a lost love letter hidden inside a piano they haven't played in decades.",
-    "Two astronauts on a long-duration mission develop a deep bond while the Earth becomes a distant memory.",
-    "A florist who only sells flowers to people who are about to experience heartbreak meets a man who buys a bouquet every day.",
+    "Two astronauts on a long mission develop a deep bond as Earth becomes a distant memory.",
+    "A florist who only sells to the heartbroken meets a man who buys a bouquet every day.",
     "In a city where it never stops snowing, two people find warmth in a small, hidden café.",
-    "A woman discovers that her husband has been living a secret second life as a world-famous circus performer.",
-    "Two political rivals from warring noble houses are trapped in an elevator during a diplomatic summit.",
+    "A woman discovers her husband has been living a secret life as a world-famous circus performer.",
+    "Two political rivals are trapped in an elevator during a diplomatic summit.",
     "A nurse in a military hospital falls for a mysterious soldier who doesn't remember who he is.",
-    "An artist who only paints in shades of grey meets someone who brings color back into their life.",
-    "A prince who wants to be a poet and a commoner who wants to be a knight fall in love during a secret tournament.",
-    "Two people who meet at a wedding realize they were actually each other's childhood best friends.",
-    "A woman inherits a haunted mansion and ends up falling in love with the ghost who lives in the library.",
+    "An artist who only paints in shades of grey meets someone who brings color back to their life.",
+    "A prince who wants to be a poet and a commoner who wants to be a knight fall in love.",
+    "Two people who meet at a wedding realize they were childhood best friends.",
+    "A woman inherits a haunted mansion and falls in love with the ghost in the library.",
     "An architect is hired to design a 'temple of love' for a client who has never been in love.",
-    "Two strangers on a trans-continental train ride share their deepest secrets, thinking they'll never see each other again.",
+    "Two strangers on a train share their deepest secrets, thinking they'll never see each other again.",
     "A professional matchmaker realizes they've been secretly in love with their most difficult client.",
-    "In a future where love is regulated by an algorithm, two people find an 'untraceable' connection.",
-    "A woman who can see the 'red strings of fate' notices that her string is tied to her worst enemy.",
+    "In a future where love is an algorithm, two people find an 'untraceable' connection.",
+    "A woman who can see the 'red strings of fate' notices hers is tied to her worst enemy.",
     "Two neighbors who communicate solely through post-it notes left on their shared fence.",
-    "An actress who is hired to play a real person falls in love with that person's grieving widower.",
-    "A world where you can 'borrow' memories of love from others to fill the void of your own loneliness.",
-    "A romance that spans centuries, as two souls keep finding each other in different lifetimes."
+    "An actress hired to play a real person falls in love with that person's grieving widower.",
+    "A world where you can 'borrow' memories of love to fill the void of your own loneliness.",
+    "A romance that spans centuries, as two souls keep finding each other in different lifetimes.",
+    "A blind date with a person who can see the future and knows exactly how the relationship ends.",
+    "A high-stakes poker player bets her heart on a man who only plays by the rules.",
+    "Two rival chefs forced to collaborate on a multi-million dollar banquet.",
+    "A librarian who finds a diary belonging to a man from the 1920s and starts writing back.",
+    "A socialite who loses everything and finds love in a communal garden."
   ],
   "Mystery & Thriller": [
     "A woman finds a hidden room in her new house containing a wall of photos of herself.",
     "A witness to a crime realizes the perpetrator was someone who has been dead for ten years.",
     "An investigator in a small town finds that every resident has the exact same fingerprint.",
-    "A high-stakes gambler is given a deck of cards that can predict the next 60 seconds of his life.",
-    "A journalist receives a package containing a series of coordinates that lead to unsolved crime scenes.",
-    "A man wakes up in a hotel room with a suitcase full of money and a bloody knife, but no memory.",
-    "In a world of constant surveillance, a man finds a 'blind spot' where he can commit the perfect crime.",
-    "A detective realizes that the serial killer they are hunting is actually using their own novels as a blueprint.",
-    "A group of hackers discovers a secret government program that can rewrite the DNA of anyone on Earth.",
-    "An art forger realizes that the painting they just 'copied' is actually the original that was stolen years ago.",
-    "A passenger on a flight notices that the person sitting next to them doesn't have a heartbeat.",
-    "A cold case is reopened when a new piece of evidence is found inside a time capsule buried in 1950.",
-    "A woman realizes her husband has a secret room in the basement filled with surveillance footage of their neighbors.",
-    "A whistleblower for a tech giant disappears, leaving behind only a cryptic message on a public terminal.",
-    "A private investigator is hired to find a person who doesn't exist according to any official records.",
-    "An accountant discovers a multi-billion dollar fraud that leads all the way to the President.",
-    "A group of friends on a weekend getaway finds a video camera containing footage of their own arrival from a different perspective.",
+    "A high-stakes gambler is given a deck of cards that can predict the next 60 seconds.",
+    "A journalist receives a package containing coordinates that lead to unsolved crime scenes.",
+    "A man wakes up in a hotel room with a suitcase full of money and a bloody knife.",
+    "In a world of constant surveillance, a man finds a 'blind spot' to commit the perfect crime.",
+    "A detective realizes the serial killer they are hunting is using their own novels as a blueprint.",
+    "A group of hackers discovers a secret government program that can rewrite DNA.",
+    "An art forger realizes the painting they just 'copied' is actually the stolen original.",
+    "A passenger on a flight notices the person sitting next to them doesn't have a heartbeat.",
+    "A cold case is reopened when a new piece of evidence is found in a 1950s time capsule.",
+    "A woman realizes her husband has a room filled with surveillance of their neighbors.",
+    "A whistleblower for a tech giant disappears, leaving a cryptic message on a public terminal.",
+    "A private investigator is hired to find a person who doesn't exist in any official records.",
+    "An accountant discovers a multi-billion dollar fraud that leads to the President.",
+    "Friends on a weekend getaway find footage of their own arrival from a different perspective.",
     "A man receives a phone call from himself, 20 years in the future, warning him not to go to work.",
-    "A detective in a futuristic city where everyone wears masks must solve a murder where the victim was maskless.",
-    "A treasure hunter finds a map that leads to a vault containing the secrets of the Knights Templar.",
-    "A woman who works as a 'professional secret keeper' realizes one of her clients is planning a mass-casualty event.",
-    "A man discovers that his wife has been dead for five years and the person he's living with is a perfect imposter.",
-    "A serial killer who only targets other serial killers, leaving behind cryptic puzzles for the police.",
-    "In a city where everyone is blind, the first person to regain their sight witnesses a horrific murder.",
-    "A hacker who finds a backdoor into a 'reality simulation' and starts making small, deadly changes."
+    "A detective in a city where everyone wears masks must solve a murder where the victim was maskless.",
+    "A treasure hunter finds a map leading to a vault containing the secrets of the Templars.",
+    "A secret keeper realizes one of her clients is planning a mass-casualty event.",
+    "A man discovers his wife has been dead for years and he's living with a perfect imposter.",
+    "A serial killer who only targets other serial killers leaves puzzles for the police.",
+    "In a city where everyone is blind, the first person to regain sight witnesses a murder.",
+    "A hacker finds a backdoor into a 'reality simulation' and starts making deadly changes.",
+    "A private plane disappears and reappears thirty years later, with all passengers still the same age.",
+    "A woman realizes she's the only one who remembers a global event that supposedly never happened.",
+    "A witness protection officer falls in love with the person they are supposed to be hiding.",
+    "A detective with the ability to hear 'echoes' of the past at crime scenes.",
+    "A high-security prison where the guards are the real prisoners."
   ]
 };
 
@@ -201,7 +247,7 @@ const GroupedSelect: React.FC<{
     <select 
         value={value} 
         onChange={e => onChange(e.target.value)} 
-        className={`p-2 bg-gray-700 border border-gray-600 rounded-md text-sm text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all ${className}`}
+        className={`w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-sm text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all ${className}`}
     >
         {(Object.entries(categories) as [string, string[]][]).map(([category, items]) => (
             <optgroup key={category} label={category} className="bg-gray-800 text-indigo-300 font-bold">
@@ -232,7 +278,7 @@ const InspirationModal: React.FC<{
                     <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
                 </div>
 
-                <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide shrink-0">
                     {Object.keys(INSPIRATION_LIBRARY).map(cat => (
                         <button 
                             key={cat} 
@@ -297,13 +343,30 @@ const PromptAnalysisModal: React.FC<{
                                     <p className="text-sm text-gray-300">{analysis.feedback.weaknesses}</p>
                                 </div>
                             </div>
+
                             <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
                                 <h4 className="text-sm font-black text-indigo-400 uppercase tracking-widest mb-2">Refined Narrative Seed</h4>
                                 <div className="p-3 bg-gray-900 rounded-lg text-sm text-gray-200 leading-relaxed border border-indigo-500/30">{analysis.refinedPrompt}</div>
                                 <div className="mt-4 flex justify-end"><Button onClick={() => onApply(analysis.refinedPrompt)} className="bg-indigo-600 !py-1.5 !px-4 text-xs">Apply This Seed</Button></div>
                             </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <h4 className="text-sm font-black text-blue-400 uppercase tracking-widest">Structure Suggestions</h4>
+                                    {analysis.narrativeStructureSuggestions.map((s, i) => (
+                                        <div key={i} className="flex gap-3 items-start p-3 bg-gray-800/30 rounded-lg border border-gray-700/50 text-xs text-gray-300 italic"><span className="text-blue-500 font-bold">•</span>{s}</div>
+                                    ))}
+                                </div>
+                                <div className="space-y-3">
+                                    <h4 className="text-sm font-black text-purple-400 uppercase tracking-widest">Character Growth</h4>
+                                    {analysis.characterDevelopmentSuggestions.map((s, i) => (
+                                        <div key={i} className="flex gap-3 items-start p-3 bg-gray-800/30 rounded-lg border border-gray-700/50 text-xs text-gray-300 italic"><span className="text-purple-500 font-bold">•</span>{s}</div>
+                                    ))}
+                                </div>
+                            </div>
+                            
                             <div className="space-y-3">
-                                <h4 className="text-sm font-black text-teal-400 uppercase tracking-widest">Growth Suggestions</h4>
+                                <h4 className="text-sm font-black text-teal-400 uppercase tracking-widest">General Suggestions</h4>
                                 {analysis.suggestions.map((s, i) => (
                                     <div key={i} className="flex gap-3 items-start p-3 bg-gray-800/30 rounded-lg border border-gray-700/50 text-sm text-gray-300 italic"><span className="text-teal-500 font-bold">•</span>{s}</div>
                                 ))}
@@ -569,7 +632,7 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
     <div className={`space-y-6 ${isFocusMode ? 'fixed inset-0 z-50 bg-[#0f172a] overflow-y-auto flex flex-col p-8' : 'animate-fade-in'}`}>
       {!isFocusMode && (
         <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-700 p-6 rounded-xl shadow-lg space-y-6">
-            <div className="flex justify-between items-center border-b border-gray-700 pb-4">
+            <div className="flex justify-between items-center border-b border-gray-700 pb-4 shrink-0">
                 <h2 className="text-2xl font-bold text-indigo-300">Infinite Story Weaver</h2>
                 <Button onClick={() => setIsResetModalOpen(true)} disabled={isBusy} className="bg-gray-600 hover:bg-gray-500 !py-1.5 !px-4 text-xs">Reset All</Button>
             </div>
@@ -615,7 +678,7 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
 
             <div className="space-y-4">
                 <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Complex Genre Mashup</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     <GroupedSelect value={genre} onChange={setGenre} categories={GENRE_CATEGORIES} />
                     <GroupedSelect value={genre2} onChange={setGenre2} categories={GENRE_CATEGORIES} />
                     <GroupedSelect value={genre3} onChange={setGenre3} categories={GENRE_CATEGORIES} />
@@ -626,11 +689,11 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                     <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Primary Universe</label>
-                    <GroupedSelect value={fandom1} onChange={setFandom1} categories={FANDOM_CATEGORIES} className="w-full" />
+                    <GroupedSelect value={fandom1} onChange={setFandom1} categories={FANDOM_CATEGORIES} />
                 </div>
                 <div className="space-y-2">
                     <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Atmosphere Blend</label>
-                    <GroupedSelect value={fandom2} onChange={setFandom2} categories={FANDOM_CATEGORIES} className="w-full" />
+                    <GroupedSelect value={fandom2} onChange={setFandom2} categories={FANDOM_CATEGORIES} />
                 </div>
             </div>
 
@@ -659,7 +722,7 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
             <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-700 p-6 rounded-xl shadow-lg h-full flex flex-col min-h-[600px]">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-4 shrink-0">
                     <h3 className="text-xl font-bold text-indigo-300">Manuscript</h3>
                     <div className="flex gap-2">
                         <Button onClick={() => setIsFocusMode(!isFocusMode)} className="!px-4 !py-1 text-xs bg-gray-700 hover:bg-gray-600">Focus</Button>
@@ -670,7 +733,7 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
                     <TextArea value={generatedText} onChange={e => setGeneratedText(e.target.value)} rows={15} className="bg-transparent font-serif text-lg leading-relaxed border-none focus:ring-0 custom-scrollbar" />
                 </div>
                 {(audioPlayerProps.isReady || isGeneratingAudio || audioPlayerProps.isLoading) && (
-                    <div className="mt-6">
+                    <div className="mt-6 shrink-0">
                         <AudioPlayer {...audioPlayerProps} isLoading={isGeneratingAudio || audioPlayerProps.isLoading} loadingText={isGeneratingAudio ? "Preparing Studio Voice..." : "Loading Audio..."} onSeek={seek} downloadWav={() => downloadWav(generateFilename(title || 'story', 'wav'))} downloadMp3={() => downloadMp3(generateFilename(title || 'story', 'mp3'))} stop={stop} />
                     </div>
                 )}
@@ -691,14 +754,14 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
                     {isGeneratingVisual && (<div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center"><Spinner className="h-8 w-8 text-indigo-500 mb-2" /><span className="text-[10px] font-bold text-indigo-300 uppercase animate-pulse">Painting atmosphere...</span></div>)}
                 </div>
                 {visualMode === 'manual' && (<div className="space-y-2 mb-3 animate-fade-in"><label className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Generation Prompt</label><TextArea value={manualVisualPrompt} onChange={e => setManualVisualPrompt(e.target.value)} placeholder="Cinematic lighting, hyper-realistic, 8k..." rows={2} className="text-xs p-2 bg-gray-900 border-gray-700" /></div>)}
-                <Button onClick={handleIllustrate} disabled={isBusy || (visualMode === 'auto' ? !generatedText : !manualVisualPrompt.trim())} className="w-full bg-purple-600 text-[10px] font-black uppercase py-2 flex items-center justify-center gap-2 hover:bg-purple-500 shadow-md"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" /></svg>{visualMode === 'auto' ? 'Illustrate Scene' : 'Generate Visual'}</Button>
+                <Button onClick={handleIllustrate} disabled={isBusy || (visualMode === 'auto' ? !generatedText : !manualVisualPrompt.trim())} className="w-full bg-purple-600 text-[10px] font-black uppercase py-2 flex items-center justify-center gap-2 hover:bg-purple-500 shadow-md !rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" /></svg>{visualMode === 'auto' ? 'Illustrate Scene' : 'Generate Visual'}</Button>
             </div>
             <div className="bg-gray-900/40 p-4 rounded-xl border border-gray-700/50 space-y-3">
-                <Button onClick={() => addTask({ type: 'continue-story', name: 'Continuing...', payload: { story: generatedText, wordCount: targetWordCount } })} disabled={!generatedText || isBusy} className="w-full bg-indigo-600 py-3 transform hover:translate-y-[-2px] transition-transform">Continue Narrative</Button>
-                <Button onClick={handleGenerateAudio} disabled={!generatedText || isBusy} className="w-full bg-emerald-600 py-3 flex items-center justify-center gap-2 transform hover:translate-y-[-2px] transition-transform">{isGeneratingAudio ? <Spinner className="h-4 w-4" /> : <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.135A3.235 3.235 0 005 13a3 3 0 000 6c.983 0 1.812-.471 2.312-1.187A2.968 2.968 0 008 17.5V11l9-1.8V15.135A3.235 3.235 0 0016 14a3 3 0 000 6c.983 0 1.812-.471 2.312-1.187A2.968 2.968 0 0019 17.5V4a1 1 0 00-.312-.728L18 3.272V3z" /></svg>}Studio Narrate</Button>
-                <Button onClick={handleAnalyzeStory} disabled={!generatedText || isBusy} className="w-full bg-teal-600 py-3 flex items-center justify-center gap-2 transform hover:translate-y-[-2px] transition-transform">{isManuscriptAnalyzing ? <Spinner className="h-4 w-4" /> : <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" /></svg>}Analyze Manuscript</Button>
-                <Button onClick={() => setIsPlotTwistModalOpen(true)} disabled={!generatedText || isBusy} className="w-full bg-purple-700 py-3 transform hover:translate-y-[-2px] transition-transform">Add Plot Twist</Button>
-                <Button onClick={() => addTask({ type: 'generate-ending', name: 'Ending...', payload: { story: generatedText, wordCount: targetWordCount } })} disabled={!generatedText || isBusy} className="w-full bg-slate-700 py-3 transform hover:translate-y-[-2px] transition-transform">The End</Button>
+                <Button onClick={() => addTask({ type: 'continue-story', name: 'Continuing...', payload: { story: generatedText, wordCount: targetWordCount } })} disabled={!generatedText || isBusy} className="w-full bg-indigo-600 !py-3 !rounded-lg transform hover:translate-y-[-2px] transition-transform text-xs uppercase font-black">Continue Narrative</Button>
+                <Button onClick={handleGenerateAudio} disabled={!generatedText || isBusy} className="w-full bg-emerald-600 !py-3 !rounded-lg flex items-center justify-center gap-2 transform hover:translate-y-[-2px] transition-transform text-xs uppercase font-black">{isGeneratingAudio ? <Spinner className="h-4 w-4" /> : <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.135A3.235 3.235 0 005 13a3 3 0 000 6c.983 0 1.812-.471 2.312-1.187A2.968 2.968 0 008 17.5V11l9-1.8V15.135A3.235 3.235 0 0016 14a3 3 0 000 6c.983 0 1.812-.471 2.312-1.187A2.968 2.968 0 0019 17.5V4a1 1 0 00-.312-.728L18 3.272V3z" /></svg>}Studio Narrate</Button>
+                <Button onClick={handleAnalyzeStory} disabled={!generatedText || isBusy} className="w-full bg-teal-600 !py-3 !rounded-lg flex items-center justify-center gap-2 transform hover:translate-y-[-2px] transition-transform text-xs uppercase font-black">{isManuscriptAnalyzing ? <Spinner className="h-4 w-4" /> : <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" /></svg>}Analyze Manuscript</Button>
+                <Button onClick={() => setIsPlotTwistModalOpen(true)} disabled={!generatedText || isBusy} className="w-full bg-purple-700 !py-3 !rounded-lg transform hover:translate-y-[-2px] transition-transform text-xs uppercase font-black">Add Plot Twist</Button>
+                <Button onClick={() => addTask({ type: 'generate-ending', name: 'Ending...', payload: { story: generatedText, wordCount: targetWordCount } })} disabled={!generatedText || isBusy} className="w-full bg-slate-700 !py-3 !rounded-lg transform hover:translate-y-[-2px] transition-transform text-xs uppercase font-black">The End</Button>
             </div>
         </div>
       </div>
