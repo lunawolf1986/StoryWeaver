@@ -1,0 +1,207 @@
+
+
+import React, { useState, useEffect } from 'react';
+import { SeriesIntro, IntroTone, INTRO_TONES, VOICE_OPTIONS, StorySeries } from '../types';
+import { generateIntroScript, generateAudio } from '../services/geminiService';
+import useAudio from '../hooks/useAudio';
+import Button from './Button';
+import TextArea from './TextArea';
+import Spinner from './Spinner';
+import AudioPlayer from './AudioPlayer';
+import { generateFilename } from '../utils/audioUtils';
+
+interface SeriesIntroModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  series: StorySeries;
+  existingIntro: SeriesIntro | null;
+  onSave: (introData: Omit<SeriesIntro, 'id' | 'createdAt'>) => void;
+}
+
+const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, series, existingIntro, onSave }) => {
+  // Form State
+  const [tone, setTone] = useState<IntroTone>(existingIntro?.tone || 'Epic & Grandiose');
+  const [themes, setThemes] = useState(existingIntro?.themes || '');
+  const [voice, setVoice] = useState(existingIntro?.voice || 'Zephyr');
+  
+  // Generation State
+  const [script, setScript] = useState(existingIntro?.script || '');
+  const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+  const [error, setError] = useState('');
+
+  // Audio State
+  // FIX: Removed `retryLoad` and `downloadSegment` as they are not provided by `useAudio`
+  const { loadAudio, unloadAudio, seek, downloadWav, downloadMp3, stop, ...audioPlayerProps } = useAudio();
+  const { isReady, error: audioError } = audioPlayerProps;
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [generatedAudioB64, setGeneratedAudioB64] = useState<string | string[] | null>(existingIntro?.audioBase64 || null);
+  const [audioGenerationProgress, setAudioGenerationProgress] = useState<number | null>(null);
+
+  // Load existing audio when modal opens
+  useEffect(() => {
+    if (isOpen && existingIntro?.audioBase64) {
+      loadAudio(existingIntro.audioBase64).catch(e => console.error("Failed to load existing intro audio", e));
+    } else if (!isOpen) {
+        unloadAudio();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, existingIntro]);
+
+
+  const isBusy = isGeneratingScript || isGeneratingAudio || audioPlayerProps.isLoading;
+
+  const handleGenerateScript = async () => {
+    if (!themes) {
+      setError('Please provide some key themes or elements for the series.');
+      return;
+    }
+    setIsGeneratingScript(true);
+    setError('');
+    setScript('');
+    unloadAudio();
+    setGeneratedAudioB64(null);
+
+    try {
+      const generatedScript = await generateIntroScript(series.name, tone, themes);
+      setScript(generatedScript);
+    } catch (e: any) {
+      setError(`Failed to generate script: ${e.message}`);
+    } finally {
+      setIsGeneratingScript(false);
+    }
+  };
+
+  const handleGenerateAudio = async () => {
+    if (!script) return;
+    setIsGeneratingAudio(true);
+    setAudioGenerationProgress(0);
+    setError('');
+    
+    try {
+        const audioB64 = await generateAudio(script, voice, setAudioGenerationProgress);
+        setGeneratedAudioB64(audioB64);
+        await loadAudio(audioB64);
+    } catch (e: any) {
+        setError(`Audio generation failed: ${e.message}`);
+    } finally {
+        setIsGeneratingAudio(false);
+        setAudioGenerationProgress(null);
+    }
+  };
+
+  const handleSave = () => {
+    if (!script) {
+        setError("Cannot save without a script.");
+        return;
+    }
+    onSave({
+        seriesId: series.id,
+        script,
+        audioBase64: generatedAudioB64 || undefined,
+        voice,
+        tone,
+        themes,
+    });
+    onClose();
+  };
+
+  const handleDownloadWav = () => {
+    const filename = generateFilename(`series-${series.name.toLowerCase().replace(/\s+/g, '-')}-intro`, 'wav');
+    downloadWav(filename);
+  };
+
+  const handleDownloadMp3 = async () => {
+    const filename = generateFilename(`series-${series.name.toLowerCase().replace(/\s+/g, '-')}-intro`, 'mp3');
+    await downloadMp3(filename);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4 animate-fade-in">
+        <style>{`.animate-fade-in { animation: fadeIn 0.3s ease-out; } @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }`}</style>
+        <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-6 md:p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-3xl font-bold text-purple-400 mb-6 flex-shrink-0">
+                Series Intro Creator: <span className="text-white">{series.name}</span>
+            </h2>
+
+            <div className="space-y-6">
+                {/* Step 1: Configuration */}
+                <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 space-y-4">
+                    <h3 className="text-lg font-semibold text-indigo-300">1. Configure Your Intro</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Tone / Mood</label>
+                            <select value={tone} onChange={e => setTone(e.target.value as IntroTone)} className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md">
+                                {INTRO_TONES.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Narration Voice</label>
+                             <select value={voice} onChange={e => setVoice(e.target.value)} className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md">
+                                {VOICE_OPTIONS.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Key Themes & Elements</label>
+                        <TextArea
+                            value={themes}
+                            onChange={(e) => setThemes(e.target.value)}
+                            placeholder="e.g., A fallen kingdom, a cursed sword, the last hero's journey, betrayal, hope..."
+                            rows={3}
+                        />
+                    </div>
+                     <div className="text-center">
+                        <Button onClick={handleGenerateScript} disabled={isBusy} className="bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center gap-2">
+                           {isGeneratingScript ? <><Spinner /><span>Generating Script...</span></> : 'Generate Intro Script'}
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Step 2: Script & Audio */}
+                {(script || isGeneratingScript) && (
+                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 space-y-4">
+                        <h3 className="text-lg font-semibold text-indigo-300">2. Review & Narrate</h3>
+                        <TextArea value={script} readOnly rows={6} className="bg-gray-800/50 text-base leading-relaxed" />
+                        
+                        <div className="text-center">
+                            <Button onClick={handleGenerateAudio} disabled={!script || isBusy} className="flex items-center justify-center gap-2">
+                                {isGeneratingAudio ? <><Spinner /><span>{`Generating Audio (${audioGenerationProgress ?? 0}%)`}</span></> : 'Generate Narration'}
+                            </Button>
+                        </div>
+
+                        {(isReady || isGeneratingAudio || audioPlayerProps.isLoading || audioError) && (
+                            <div className="pt-2">
+                                <AudioPlayer
+                                    {...audioPlayerProps}
+                                    isLoading={isGeneratingAudio || audioPlayerProps.isLoading}
+                                    loadingText={isGeneratingAudio ? `Generating Audio... (${audioGenerationProgress ?? 0}%)` : 'Preparing Audio...'}
+                                    onSeek={seek}
+                                    downloadWav={handleDownloadWav}
+                                    downloadMp3={handleDownloadMp3}
+                                    stop={stop}
+                                />
+                            </div>
+                        )}
+                        <p className="text-xs text-gray-400 text-center pt-2">For the full effect, layer this narration over epic background music in your video editor.</p>
+                    </div>
+                )}
+            </div>
+
+            {error && <div className="text-red-400 p-3 mt-4 bg-red-900/50 rounded-lg text-center text-sm">{error}</div>}
+
+            <div className="mt-8 flex justify-between items-center gap-4 flex-shrink-0">
+                <Button onClick={onClose} className="bg-gray-600 hover:bg-gray-500" disabled={isBusy}>
+                    Cancel
+                </Button>
+                <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700" disabled={isBusy || !script}>
+                    Save Intro
+                </Button>
+            </div>
+        </div>
+    </div>
+  );
+};
+
+export default SeriesIntroModal;

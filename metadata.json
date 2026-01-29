@@ -1,0 +1,8 @@
+{
+  "name": "Story Weaver",
+  "description": "Generate imaginative and captivating stories of any length using the power of AI.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
