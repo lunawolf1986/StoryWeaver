@@ -1,4 +1,5 @@
 
+
 // Define types for story genres
 export type StoryGenre = string;
 
@@ -27,11 +28,8 @@ export const FANDOM_CATEGORIES: Record<string, string[]> = {
 
 export const STORY_FANDOMS: StoryFandom[] = Object.values(FANDOM_CATEGORIES).flat().sort();
 
-export type WritingStyle = 'Default' | 'Descriptive' | 'Humorous' | 'Dark' | 'Fast-Paced' | 'Flowery' | 'Minimalist' | 'Poetic';
-export const WRITING_STYLES: WritingStyle[] = ['Default', 'Descriptive', 'Humorous', 'Dark', 'Fast-Paced', 'Flowery', 'Minimalist', 'Poetic'];
-
-export type NarrativeIntensity = 'Cozy' | 'Moderate' | 'Visceral' | 'Unfiltered';
-export const NARRATIVE_INTENSITIES: NarrativeIntensity[] = ['Cozy', 'Moderate', 'Visceral', 'Unfiltered'];
+// Removed WritingStyle type and WRITING_STYLES constant
+// Removed NarrativeIntensity type and NARRATIVE_INTENSITIES constant
 
 export type MeditationFocus = 'Relaxation' | 'Stress Relief' | 'Focus' | 'Sleep' | 'Mindfulness' | 'Loving-Kindness' | 'Visualization';
 export const MEDITATION_FOCUSES: MeditationFocus[] = ['Mindfulness', 'Relaxation', 'Stress Relief', 'Focus', 'Sleep', 'Loving-Kindness', 'Visualization'];

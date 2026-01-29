@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI } from '@google/genai';
 import React, { createContext, useCallback, useContext, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -96,7 +97,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         switch (queuedTask.type) {
             case 'generate-story':
-                result = await geminiService.generateStory(queuedTask.payload.prompt, queuedTask.payload.genre, queuedTask.payload.genre2, queuedTask.payload.genre3, queuedTask.payload.fandom1, queuedTask.payload.fandom2, queuedTask.payload.style, queuedTask.payload.intensity, queuedTask.payload.characters, queuedTask.payload.wordCount, queuedTask.payload.seriesContext, onProgress, onChunk);
+                result = await geminiService.generateStory(queuedTask.payload.prompt, queuedTask.payload.genre, queuedTask.payload.genre2, queuedTask.payload.genre3, queuedTask.payload.fandom1, queuedTask.payload.fandom2, queuedTask.payload.characters, queuedTask.payload.wordCount, queuedTask.payload.seriesContext, onProgress, onChunk);
                 break;
             case 'continue-story': {
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -106,8 +107,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     contents: `Continue this story seamlessly. NO BOLDING. Use em-dashes for action.\n\n...${context}`,
                     config: { 
                       systemInstruction: STORY_MOD_INSTRUCTION,
-                      maxOutputTokens: 1000, // Limit to approx 1k tokens per continuation
-                      thinkingConfig: { thinkingBudget: 250 }
+                      maxOutputTokens: 4000, // Increased cap for continuation
+                      thinkingConfig: { thinkingBudget: 1000 } // Adjusted thinking budget
                     }
                 });
                 let fullText = '';
@@ -129,8 +130,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     contents: `Conclude the story definitively. NO BOLDING.\n\n...${context}`,
                     config: { 
                       systemInstruction: STORY_MOD_INSTRUCTION,
-                      maxOutputTokens: 1000, // Limit to approx 1k tokens for ending
-                      thinkingConfig: { thinkingBudget: 250 }
+                      maxOutputTokens: 4000, // Increased cap for ending
+                      thinkingConfig: { thinkingBudget: 1000 } // Adjusted thinking budget
                     }
                 });
                 let fullText = '';
@@ -152,8 +153,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     contents: `Add a "${queuedTask.payload.twistType}" twist. NO BOLDING.\n\n...${context}`,
                     config: { 
                       systemInstruction: STORY_MOD_INSTRUCTION,
-                      maxOutputTokens: 1000, // Limit to approx 1k tokens for twist
-                      thinkingConfig: { thinkingBudget: 250 }
+                      maxOutputTokens: 4000, // Increased cap for twist
+                      thinkingConfig: { thinkingBudget: 1000 } // Adjusted thinking budget
                     }
                 });
                 let fullText = '';

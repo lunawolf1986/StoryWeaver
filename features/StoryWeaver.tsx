@@ -1,8 +1,10 @@
 
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { generateStoryIdeas, generateImagePrompt, generateImage, analyzePrompt, generateAudio } from '../services/geminiService';
 import {
-  StoryGenre, GENRE_CATEGORIES, FANDOM_CATEGORIES, WritingStyle, WRITING_STYLES, NarrativeIntensity, NARRATIVE_INTENSITIES, SavedNarrative, NarrativeType, StoryCharacter, PlotTwistType, STORY_LENGTHS, VOICE_OPTIONS, PromptAnalysisResult
+  StoryGenre, GENRE_CATEGORIES, FANDOM_CATEGORIES, StoryCharacter, PlotTwistType, STORY_LENGTHS, VOICE_OPTIONS, PromptAnalysisResult,
+  NarrativeType, SavedNarrative // Imported NarrativeType and SavedNarrative
 } from '../types';
 import { useTasks } from '../contexts/TaskContext';
 import Button from '../components/Button';
@@ -169,8 +171,8 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
   const [genre3, setGenre3] = useLocalStorage<StoryGenre>('story-genre3', 'None (General)');
   const [fandom1, setFandom1] = useLocalStorage<string>('story-fandom1', 'None (General)');
   const [fandom2, setFandom2] = useLocalStorage<string>('story-fandom2', 'None (General)');
-  const [style, setStyle] = useLocalStorage<WritingStyle>('story-style', 'Default');
-  const [intensity, setIntensity] = useLocalStorage<NarrativeIntensity>('story-intensity', 'Moderate');
+  // Removed [style, setStyle] = useLocalStorage<WritingStyle>('story-style', 'Default');
+  // Removed [intensity, setIntensity] = useLocalStorage<NarrativeIntensity>('story-intensity', 'Moderate');
   const [characters, setCharacters] = useLocalStorage<StoryCharacter[]>('story-characters', []);
   const [targetWordCount, setTargetWordCount] = useLocalStorage<number>('story-word-count', 1200);
   const [voice, setVoice] = useLocalStorage<string>('story-voice', 'Zephyr');
@@ -206,6 +208,31 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
 
   const activeTaskCount = tasks.filter(t => t.status === 'running' || t.status === 'queued').length;
   const isBusy = activeTaskCount > 0 || isGeneratingVisual || isIdeasLoading || isAnalysisLoading || isGeneratingAudio || audioPlayerProps.isLoading;
+
+  const currentLengthIndex = useMemo(() => {
+    const idx = STORY_LENGTHS.findIndex(l => l.wordCount === targetWordCount);
+    if (idx !== -1) return idx;
+    
+    let closestIdx = 0;
+    let minDiff = Infinity;
+    STORY_LENGTHS.forEach((l, i) => {
+        const diff = Math.abs(l.wordCount - targetWordCount);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestIdx = i;
+        }
+    });
+    return closestIdx;
+  }, [targetWordCount]);
+
+  const currentLengthName = useMemo(() => {
+      const exact = STORY_LENGTHS.find(l => l.wordCount === targetWordCount);
+      if (exact) return exact.name;
+      if (targetWordCount < 800) return "Flash Story Scale";
+      if (targetWordCount < 2500) return "Standard Story Scale";
+      return "Epic Narrative Scale";
+  }, [targetWordCount]);
+
 
   const handleConfirmReset = useCallback(() => {
     setPrompt(''); 
@@ -316,12 +343,12 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
     addTask({
         type: 'generate-story',
         name: `Writing: ${title || 'Story'}`,
-        payload: { prompt, genre, genre2, genre3, fandom1, fandom2, style, intensity, characters, wordCount: targetWordCount, seriesContext }
+        payload: { prompt, genre, genre2, genre3, fandom1, fandom2, characters, wordCount: targetWordCount, seriesContext }
     });
   };
 
   useEffect(() => {
-    const runningTask = tasks.find(t => t.status === 'running' && (t.type === 'generate-story' || t.type === 'continue-story' || t.type === 'generate-ending'));
+    const runningTask = tasks.find(t => t.status === 'running' && (t.type === 'generate-story' || t.type === 'continue-story' || t.type === 'generate-ending' || t.type === 'generate-plot-twist'));
     if (runningTask) {
         setGeneratedText((runningTask.payload.story || '') + (runningTask.partialResult || ''));
     }
@@ -333,6 +360,11 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
   const handleSave = () => {
     if (!generatedText) return;
     onSave(generatedText, 'Story', `Story: ${title || 'Untitled'}`, isSeries ? (selectedSeriesId === 'new' ? uuidv4() : selectedSeriesId) : undefined, latestVisual || undefined, currentAudioBase64 || undefined);
+  };
+
+  const getReadingTime = (words: number) => {
+    const min = Math.ceil(words / 150); // Average reading speed
+    return min === 1 ? '1 min' : `${min} mins`;
   };
 
   return (
@@ -357,18 +389,52 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
                         </select>
                     </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Style</label>
-                        <select value={style} onChange={e => setStyle(e.target.value as WritingStyle)} className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-sm text-white">
-                            {WRITING_STYLES.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Intensity</label>
-                        <select value={intensity} onChange={e => setIntensity(e.target.value as NarrativeIntensity)} className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-sm text-white">
-                            {NARRATIVE_INTENSITIES.map(n => <option key={n} value={n}>{n}</option>)}
-                        </select>
+                <div className="space-y-4">
+                    {/* Story Length Selection */}
+                    <div className="bg-gray-900/40 p-4 rounded-xl border border-gray-700/50 space-y-3">
+                        <div className="flex justify-between items-center mb-1">
+                            <div className="flex items-center gap-2">
+                                <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Story Length</label>
+                                <button 
+                                    onClick={() => setIsCustomLength(!isCustomLength)}
+                                    className={`p-1 rounded transition-colors ${isCustomLength ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                    title={isCustomLength ? "Back to Presets" : "Manual Entry"}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <span className="text-[11px] font-black uppercase text-indigo-300 tracking-wider bg-indigo-900/40 px-2 py-0.5 rounded border border-indigo-700/50">
+                                {currentLengthName} (~{targetWordCount} Words)
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-4 min-h-[40px]">
+                            {isCustomLength ? (
+                                <div className="flex items-center gap-3 w-full animate-fade-in">
+                                    <input
+                                        type="number"
+                                        min="100"
+                                        max="50000"
+                                        value={targetWordCount}
+                                        onChange={e => setTargetWordCount(Math.max(100, parseInt(e.target.value) || 100))}
+                                        className="flex-grow p-1.5 bg-gray-800 border border-gray-600 rounded text-indigo-300 font-black text-center focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    />
+                                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest whitespace-nowrap">Words</span>
+                                </div>
+                            ) : (
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max={STORY_LENGTHS.length - 1}
+                                    step="1"
+                                    value={currentLengthIndex}
+                                    onChange={e => setTargetWordCount(STORY_LENGTHS[parseInt(e.target.value)].wordCount)}
+                                    className="flex-grow h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500 animate-fade-in"
+                                />
+                            )}
+                            <span className="px-2 py-0.5 bg-indigo-900/40 border border-indigo-700/50 rounded text-[10px] font-bold text-indigo-300 uppercase shrink-0">~{getReadingTime(targetWordCount)} Read</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -479,7 +545,7 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
 
             <div className="bg-gray-900/40 p-4 rounded-xl border border-gray-700/50 space-y-3">
                 <Button 
-                    onClick={() => addTask({ type: 'continue-story', name: 'Continuing...', payload: { story: generatedText, intensity } })} 
+                    onClick={() => addTask({ type: 'continue-story', name: 'Continuing...', payload: { story: generatedText, wordCount: targetWordCount } })} 
                     disabled={!generatedText || isBusy} 
                     className="w-full bg-indigo-600 py-3"
                 >
@@ -501,7 +567,7 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
                     Add Plot Twist
                 </Button>
                 <Button 
-                    onClick={() => addTask({ type: 'generate-ending', name: 'Ending...', payload: { story: generatedText, intensity } })} 
+                    onClick={() => addTask({ type: 'generate-ending', name: 'Ending...', payload: { story: generatedText, wordCount: targetWordCount } })} 
                     disabled={!generatedText || isBusy} 
                     className="w-full bg-slate-700 py-3"
                 >
@@ -511,7 +577,7 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
         </div>
       </div>
       
-      <PlotTwistModal isOpen={isPlotTwistModalOpen} onClose={() => setIsPlotTwistModalOpen(false)} onGenerate={(type) => addTask({ type: 'generate-plot-twist', name: 'Twisting...', payload: { story: generatedText, twistType: type, intensity } })} isGenerating={isBusy} />
+      <PlotTwistModal isOpen={isPlotTwistModalOpen} onClose={() => setIsPlotTwistModalOpen(false)} onGenerate={(type) => addTask({ type: 'generate-plot-twist', name: 'Twisting...', payload: { story: generatedText, twistType: type, wordCount: targetWordCount } })} isGenerating={isBusy} />
       <ConfirmationModal isOpen={isResetModalOpen} onClose={() => setIsResetModalOpen(false)} onConfirm={handleConfirmReset} title="Reset Progress" children="Are you sure? This will clear the current manuscript." />
       <StoryIdeasModal isOpen={isIdeasModalOpen} onClose={() => setIsIdeasModalOpen(false)} onSelect={(idea) => { setTitle(idea.title); setPrompt(idea.prompt); setIsIdeasModalOpen(false); }} onRegenerate={handleBrainstorm} ideas={storyIdeas} isLoading={isIdeasLoading} />
       <PromptAnalysisModal isOpen={isAnalysisModalOpen} onClose={() => setIsAnalysisModalOpen(false)} onApply={handleApplyRefinedPrompt} analysis={promptAnalysis} isLoading={isAnalysisLoading} />
