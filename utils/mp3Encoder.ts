@@ -1,7 +1,4 @@
 
-// @ts-ignore
-import * as lamejs from 'lamejs';
-
 /**
  * Encodes raw PCM data (Int16) to MP3 format.
  * This is a CPU intensive operation.
@@ -14,10 +11,10 @@ export async function encodePcmToMp3(
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     try {
-      // @ts-ignore
-      const lib = window.lamejs || (typeof lamejs !== 'undefined' ? lamejs : null);
+      // Access the global lamejs instance provided by the <script> tag in index.html
+      const lib = (window as any).lamejs;
       if (!lib) {
-        throw new Error("MP3 encoder library not loaded.");
+        throw new Error("MP3 encoder library (lamejs) not found on window. Ensure it is loaded in index.html.");
       }
 
       // Convert Uint8Array PCM to Int16Array for the encoder
