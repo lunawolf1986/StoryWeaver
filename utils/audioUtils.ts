@@ -1,5 +1,8 @@
 
-import { Mp3Encoder } from './mp3Encoder';
+
+// This file is no longer used. Its contents have been inlined into useAudio.ts
+// for better control over the Web Worker lifecycle and to avoid module import issues.
+// The code has been replaced by MP3_WORKER_SCRIPT constant in useAudio.ts.
 
 export function decodeBase64(base64: string): Uint8Array {
   // A robust base64 decoder that handles URL-safe characters and missing padding.
@@ -80,24 +83,6 @@ export function createWavFileFromChunks(audioDataChunks: Uint8Array[], sampleRat
     view.setUint32(40, totalDataSize, true);
 
     return new Blob([view, ...audioDataChunks], { type: 'audio/wav' });
-}
-
-export async function createMp3FileFromBase64Chunks(
-  base64Chunks: string[],
-  sampleRate: number,
-  numChannels: number = 1
-): Promise<Blob> {
-  const encoder = new Mp3Encoder(sampleRate, numChannels);
-  await encoder.init();
-  
-  for (const b64 of base64Chunks) {
-    const bytes = decodeBase64(b64);
-    encoder.push(bytes);
-  }
-  
-  const mp3Chunks = await encoder.finalize();
-  encoder.terminate();
-  return new Blob(mp3Chunks, { type: 'audio/mpeg' });
 }
 
 export function generateFilename(text: string, extension: string): string {

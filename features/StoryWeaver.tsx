@@ -188,7 +188,7 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
   const [isGeneratingVisual, setIsGeneratingVisual] = useState(false);
 
   // Audio Integration
-  const { loadAudio, unloadAudio, seek, downloadWav, downloadMp3, stop, ...audioPlayerProps } = useAudio();
+  const { loadAudio, unloadAudio, seek, downloadWav, downloadMp3, stop, isMp3BackgroundEncoding, mp3BackgroundEncodingProgress, isMp3Ready, ...audioPlayerProps } = useAudio();
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [currentAudioBase64, setCurrentAudioBase64] = useState<string | null>(null);
 
@@ -229,7 +229,7 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
       }
       onLoadComplete();
     }
-  }, [narrativeToLoad]);
+  }, [narrativeToLoad, setGeneratedText, setTitle, setLatestVisual, setCurrentAudioBase64, loadAudio, onLoadComplete]);
 
   const handleBrainstorm = async () => {
     setIsIdeasLoading(true);
@@ -325,7 +325,7 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
     if (runningTask) {
         setGeneratedText((runningTask.payload.story || '') + (runningTask.partialResult || ''));
     }
-  }, [tasks]);
+  }, [tasks, setGeneratedText]);
 
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isPlotTwistModalOpen, setIsPlotTwistModalOpen] = useState(false);
@@ -428,7 +428,7 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
                     />
                 </div>
                 
-                {(audioPlayerProps.isReady || isGeneratingAudio || audioPlayerProps.isLoading) && (
+                {(audioPlayerProps.isReady || isGeneratingAudio || audioPlayerProps.isLoading || isMp3BackgroundEncoding) && (
                     <div className="mt-6">
                         <AudioPlayer 
                             {...audioPlayerProps}
@@ -438,6 +438,9 @@ const StoryWeaver: React.FC<StoryWeaverProps> = ({
                             downloadWav={() => downloadWav(generateFilename(title || 'story', 'wav'))}
                             downloadMp3={() => downloadMp3(generateFilename(title || 'story', 'mp3'))}
                             stop={stop}
+                            isMp3BackgroundEncoding={isMp3BackgroundEncoding}
+                            mp3BackgroundEncodingProgress={mp3BackgroundEncodingProgress}
+                            isMp3Ready={isMp3Ready}
                         />
                     </div>
                 )}

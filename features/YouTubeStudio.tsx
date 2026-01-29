@@ -17,7 +17,7 @@ const YouTubeStudio: React.FC<YouTubeStudioProps> = ({ savedNarratives }) => {
   const [youtubeContent, setYoutubeContent] = useState<YouTubeExportContent | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const storiesOnly = savedNarratives.filter(n => n.type === 'Story' || n.type === 'SleepStory' || n.type === 'Meditation');
+  const storiesOnly = savedNarratives.filter(n => n.type === 'Story' || n.type === 'SleepStory' || n.type === 'Meditation' || n.type === 'Ad');
 
   const handleExportClick = async () => {
     const narrative = storiesOnly.find(n => n.id === selectedNarrativeId);

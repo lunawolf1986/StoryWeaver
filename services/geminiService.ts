@@ -12,26 +12,32 @@ import {
   AdBrainstormResult,
 } from '../types';
 
-const TEXT_MODEL = 'gemini-3-pro-preview';
+// Use Flash for high-speed creative generation
+const NARRATIVE_MODEL = 'gemini-3-flash-preview';
+// Use Pro for deep reasoning and analysis tasks
+const ANALYSIS_MODEL = 'gemini-3-pro-preview';
 const IMAGE_MODEL = 'gemini-2.5-flash-image';
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 /**
  * Robust cleaner that removes markdown symbols and labels for a clean story flow.
+ * Updated to preserve emphasis markers like bold (**) and italics (__) for TTS interpretation.
  */
 export const cleanNarrativeText = (input: any): any => {
   if (typeof input === 'string') {
     return input
-      .replace(/\*\*/g, '')
-      .replace(/__/g, '')
-      .replace(/###/g, '')
-      .replace(/##/g, '')
-      .replace(/#/g, '')
-      .replace(/Chapter \d+/gi, '')
-      .replace(/Part \d+/gi, '')
-      .replace(/Prologue/gi, '')
-      .replace(/Epilogue/gi, '');
+      .replace(/###\s?/g, '') // Remove ### with optional space
+      .replace(/##\s?/g, '')  // Remove ## with optional space
+      .replace(/#\s?/g, '')   // Remove # with optional space
+      .replace(/Chapter \d+:\s?/gi, '') // Remove "Chapter N:"
+      .replace(/Chapter \d+\s?/gi, '') // Remove "Chapter N"
+      .replace(/Part \d+:\s?/gi, '')    // Remove "Part N:"
+      .replace(/Part \d+\s?/gi, '')     // Remove "Part N"
+      .replace(/Prologue:\s?/gi, '')    // Remove "Prologue:"
+      .replace(/Prologue\s?/gi, '')     // Remove "Prologue"
+      .replace(/Epilogue:\s?/gi, '')    // Remove "Epilogue:"
+      .replace(/Epilogue\s?/gi, '');    // Remove "Epilogue"
   }
   if (Array.isArray(input)) {
     return input.map(item => cleanNarrativeText(item));
@@ -69,15 +75,15 @@ const request = async <T>(fn: () => Promise<T>, retries = 5): Promise<T> => {
 export const generateAudio = async (text: string, voiceName: string, onProgress?: (progress: number) => void): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  // Refined prompt for cinematic, emotional human narration
-  const prompt = `You are a world-class professional audiobook narrator. 
-  Perform the following text with deep emotional resonance, natural human inflection, and dramatic pacing. 
-  Capture the mood of the story perfectly. 
-  DO NOT speak in a flat, robotic, or synthesized tone. 
-  Include natural pauses between sentences and emphasize key dramatic moments.
+  // Wrap the text in SSML tags for explicit volume and prosody control
+  const ssmlText = `<speak><prosody volume="+10dB" pitch="medium" rate="medium">${text}</prosody></speak>`;
 
-  TEXT TO NARRATE:
-  ${text}`;
+  // Updated prompt for bolder, high-volume narration, explicitly requesting SSML handling
+  const prompt = `You are a professional cinematic narrator, performing an audiobook. 
+  Output ONLY the audio stream data. Do not whisper. Use a clear, projected stage voice with high volume, clear projection, and intense energy. Use your voice to convey dramatic pacing and emotional depth. Include natural pauses and emphasize key dramatic moments.
+
+  TEXT TO NARRATE (wrapped in SSML):
+  ${ssmlText}`;
 
   const response = await request<GenerateContentResponse>(() => ai.models.generateContent({
     model: "gemini-2.5-flash-preview-tts",
@@ -136,9 +142,13 @@ export const generateStory = async (
     : `Start story: ${prompt}`;
 
   const stream = await request(() => ai.models.generateContentStream({
-    model: TEXT_MODEL,
+    model: NARRATIVE_MODEL,
     contents: userPrompt,
-    config: { systemInstruction }
+    config: { 
+      systemInstruction,
+      maxOutputTokens: Math.min(wordCount * 2, 1000), // Cap for a chunk of story, approx 1k tokens
+      thinkingConfig: { thinkingBudget: Math.min(Math.floor(wordCount * 0.5), 250) } // Reserve thinking tokens
+    }
   })) as any;
 
   let fullText = '';
@@ -154,8 +164,12 @@ export const generateStory = async (
 export const generateImagePrompt = async (text: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await request<GenerateContentResponse>(() => ai.models.generateContent({
-    model: TEXT_MODEL,
-    contents: `Based on this story segment, write a 1-sentence cinematic image generation prompt. Focus on lighting, atmosphere, and character emotion. No symbols: ${text.slice(-1000)}`
+    model: NARRATIVE_MODEL,
+    contents: `Based on this story segment, write a 1-sentence cinematic image generation prompt. Focus on lighting, atmosphere, and character emotion. No symbols: ${text.slice(-1000)}`,
+    config: {
+      maxOutputTokens: 100, // Short prompt
+      thinkingConfig: { thinkingBudget: 25 }
+    }
   }));
   return cleanNarrativeText(response.text).trim();
 };
@@ -175,11 +189,13 @@ export const generateImage = async (prompt: string): Promise<string> => {
 export const analyzeStory = async (story: string): Promise<AnalysisResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await request<GenerateContentResponse>(() => ai.models.generateContent({
-    model: TEXT_MODEL,
+    model: ANALYSIS_MODEL,
     contents: story.slice(-8000),
     config: {
       systemInstruction: "Strict JSON analysis. No bolding.",
       responseMimeType: "application/json",
+      maxOutputTokens: 1500, // For analysis output
+      thinkingConfig: { thinkingBudget: 500 },
       responseSchema: {
         type: Type.OBJECT,
         properties: {
@@ -226,11 +242,13 @@ export const generateYouTubeContent = async (story: string, isSeries?: boolean):
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const systemInstruction = `YouTube metadata JSON. No bolding. ${isSeries ? 'This is part of a series.' : ''}`;
   const response = await request<GenerateContentResponse>(() => ai.models.generateContent({
-    model: TEXT_MODEL,
+    model: ANALYSIS_MODEL,
     contents: story.slice(0, 10000),
     config: {
       systemInstruction,
       responseMimeType: "application/json",
+      maxOutputTokens: 1500, // For YouTube metadata
+      thinkingConfig: { thinkingBudget: 500 },
       responseSchema: {
         type: Type.OBJECT,
         properties: {
@@ -258,13 +276,15 @@ export const generateStoryIdeas = async (genres: string[], fandoms: string[]): P
   const universeStr = fandoms.length > 0 ? fandoms.join(', ') : 'any interesting universe';
 
   const response = await request<GenerateContentResponse>(() => ai.models.generateContent({
-    model: TEXT_MODEL,
+    model: NARRATIVE_MODEL,
     contents: `Generate 6 diverse and compelling story premises based on these preferences:
       Genres: ${genreStr}
       Atmospheres/Universes: ${universeStr}`,
     config: {
       systemInstruction: "You are a creative narrative consultant. Output a list of story ideas in JSON format. Each idea must have a 'title' and a 'prompt'. NO BOLDING. Output ONLY the JSON array.",
       responseMimeType: "application/json",
+      maxOutputTokens: 750, // For 6 ideas
+      thinkingConfig: { thinkingBudget: 150 },
       responseSchema: {
         type: Type.ARRAY,
         items: {
@@ -301,9 +321,13 @@ export const generateMeditationScript = async (
   const atmosphere = [...(fandom1 || []), ...(fandom2 || [])].filter(x => x && x !== 'None (General)').join(', ');
   const systemInstruction = `Meditation guide. Target length: ${wordCount} words. Atmosphere: ${atmosphere}. No bolding.`;
   const stream = await ai.models.generateContentStream({
-    model: TEXT_MODEL,
+    model: NARRATIVE_MODEL,
     contents: customPrompt || `Guided ${focus} meditation.`,
-    config: { systemInstruction }
+    config: { 
+      systemInstruction,
+      maxOutputTokens: Math.min(wordCount * 2, 1000), // Cap for a chunk of script
+      thinkingConfig: { thinkingBudget: Math.min(Math.floor(wordCount * 0.5), 250) } // Reserve thinking tokens
+    }
   }) as any;
   let fullText = '';
   for await (const chunk of stream) {
@@ -333,9 +357,13 @@ export const generateSleepStoryScript = async (
     : customPrompt || `Sleep story: ${theme}`;
 
   const stream = await ai.models.generateContentStream({
-    model: TEXT_MODEL,
+    model: NARRATIVE_MODEL,
     contents: prompt,
-    config: { systemInstruction }
+    config: { 
+      systemInstruction,
+      maxOutputTokens: Math.min(wordCount * 2, 1000), // Cap for a chunk of script
+      thinkingConfig: { thinkingBudget: Math.min(Math.floor(wordCount * 0.5), 250) } // Reserve thinking tokens
+    }
   }) as any; let fullText = '';
   for await (const chunk of stream) {
     const text = chunk.text || '';
@@ -348,21 +376,27 @@ export const generateSleepStoryScript = async (
 
 export const generateIntroScript = async (name: string, tone: string, themes: string) => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const response = await ai.models.generateContent({
-        model: TEXT_MODEL,
-        contents: `Cinematic intro for "${name}". Tone: ${tone}. Themes: ${themes}. No bolding.`
-    });
+    const response = await request<GenerateContentResponse>(() => ai.models.generateContent({
+        model: NARRATIVE_MODEL,
+        contents: `Cinematic intro for "${name}". Tone: ${tone}. Themes: ${themes}. No bolding.`,
+        config: {
+          maxOutputTokens: 500, // Intro scripts are shorter
+          thinkingConfig: { thinkingBudget: 100 }
+        }
+    }));
     return cleanNarrativeText(response.text);
 };
 
 export const analyzePrompt = async (prompt: string): Promise<PromptAnalysisResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const response = await ai.models.generateContent({
-    model: TEXT_MODEL,
+  const response = await request<GenerateContentResponse>(() => ai.models.generateContent({
+    model: ANALYSIS_MODEL,
     contents: prompt,
     config: {
       systemInstruction: "Analyze story prompt. JSON. No bolding. In the 'refinedPrompt' field, provide a rewritten, much better, highly evocative version of the user's input.",
       responseMimeType: "application/json",
+      maxOutputTokens: 1000, // For prompt analysis
+      thinkingConfig: { thinkingBudget: 250 },
       responseSchema: {
         type: Type.OBJECT,
         properties: {
@@ -383,7 +417,7 @@ export const analyzePrompt = async (prompt: string): Promise<PromptAnalysisResul
         required: ["suggestions", "refinedPrompt", "feedback"]
       }
     }
-  });
+  }));
   try {
     return JSON.parse(response.text || '{}');
   } catch (e) {
@@ -413,9 +447,13 @@ export const generateAdScript = async (
     No bolding.`;
   const prompt = `Write an ad for "${product}". Target audience: ${audience}. Key benefits: ${benefits}.`;
   const response = await request<GenerateContentResponse>(() => ai.models.generateContent({
-    model: TEXT_MODEL,
+    model: NARRATIVE_MODEL,
     contents: prompt,
-    config: { systemInstruction }
+    config: { 
+      systemInstruction,
+      maxOutputTokens: 1000, // Ad scripts are typically under 1k words
+      thinkingConfig: { thinkingBudget: 250 }
+    }
   }));
   return cleanNarrativeText(response.text);
 };
@@ -423,11 +461,13 @@ export const generateAdScript = async (
 export const brainstormAdDetails = async (product: string): Promise<AdBrainstormResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await request<GenerateContentResponse>(() => ai.models.generateContent({
-    model: TEXT_MODEL,
+    model: NARRATIVE_MODEL,
     contents: `Brainstorm target audiences and key benefits for a product named "${product}".`,
     config: {
       systemInstruction: "Strict JSON. No bolding.",
       responseMimeType: "application/json",
+      maxOutputTokens: 500, // Brainstorming results for audiences/benefits
+      thinkingConfig: { thinkingBudget: 100 },
       responseSchema: {
         type: Type.OBJECT,
         properties: {

@@ -30,7 +30,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const cancellationTokens = useRef(new Map<string, boolean>()).current;
   
   const lastTaskFinishedAt = useRef<number>(0);
-  const MIN_GAP_BETWEEN_TASKS = 1000; 
+  const MIN_GAP_BETWEEN_TASKS = 200; // Significantly reduced gap for snappier performance
 
   const updateTask = useCallback((taskId: string, updates: Partial<Task>) => {
     setTasks(prev => prev.map(t => (t.id === taskId ? { ...t, ...updates } : t)));
@@ -102,9 +102,13 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
                 const context = queuedTask.payload.story.slice(-4000);
                 const stream = await ai.models.generateContentStream({
-                    model: 'gemini-3-pro-preview',
+                    model: 'gemini-3-flash-preview', // Switched to Flash for speed
                     contents: `Continue this story seamlessly. NO BOLDING. Use em-dashes for action.\n\n...${context}`,
-                    config: { systemInstruction: STORY_MOD_INSTRUCTION }
+                    config: { 
+                      systemInstruction: STORY_MOD_INSTRUCTION,
+                      maxOutputTokens: 1000, // Limit to approx 1k tokens per continuation
+                      thinkingConfig: { thinkingBudget: 250 }
+                    }
                 });
                 let fullText = '';
                 for await (const chunk of stream) {
@@ -121,9 +125,13 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
                 const context = queuedTask.payload.story.slice(-4000);
                 const stream = await ai.models.generateContentStream({
-                    model: 'gemini-3-pro-preview',
+                    model: 'gemini-3-flash-preview', // Switched to Flash for speed
                     contents: `Conclude the story definitively. NO BOLDING.\n\n...${context}`,
-                    config: { systemInstruction: STORY_MOD_INSTRUCTION }
+                    config: { 
+                      systemInstruction: STORY_MOD_INSTRUCTION,
+                      maxOutputTokens: 1000, // Limit to approx 1k tokens for ending
+                      thinkingConfig: { thinkingBudget: 250 }
+                    }
                 });
                 let fullText = '';
                 for await (const chunk of stream) {
@@ -140,9 +148,13 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
                 const context = queuedTask.payload.story.slice(-4000);
                 const stream = await ai.models.generateContentStream({
-                    model: 'gemini-3-pro-preview',
+                    model: 'gemini-3-flash-preview', // Switched to Flash for speed
                     contents: `Add a "${queuedTask.payload.twistType}" twist. NO BOLDING.\n\n...${context}`,
-                    config: { systemInstruction: STORY_MOD_INSTRUCTION }
+                    config: { 
+                      systemInstruction: STORY_MOD_INSTRUCTION,
+                      maxOutputTokens: 1000, // Limit to approx 1k tokens for twist
+                      thinkingConfig: { thinkingBudget: 250 }
+                    }
                 });
                 let fullText = '';
                 for await (const chunk of stream) {
@@ -221,7 +233,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
     
-    const interval = setInterval(processQueue, 1000);
+    const interval = setInterval(processQueue, 100); // Poll faster
     return () => clearInterval(interval);
 
   }, [tasks, setTasks, updateTask, cancellationTokens]);

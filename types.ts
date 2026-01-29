@@ -97,7 +97,7 @@ export const PLOT_TWIST_DETAILS: PlotTwistDetail[] = [
 export interface StoryCharacter { id: string; name: string; description: string; }
 export interface StorySeries { id: string; name: string; }
 export interface SeriesIntro { id: string; seriesId: string; script: string; tone: IntroTone; themes: string; createdAt: string; voice?: string; audioBase64?: string; }
-export type NarrativeType = 'Story' | 'Meditation' | 'SleepStory' | 'Ad' | 'Classic';
+export type NarrativeType = 'Story' | 'Meditation' | 'SleepStory' | 'Ad';
 export interface SavedNarrative { id: string; type: NarrativeType; title: string; content: string; createdAt: string; seriesId?: string; imageBase64?: string; audioBase64?: string; }
 
 export interface AISuggestion { category: string; originalText: string; suggestedChange: string; explanation: string; }

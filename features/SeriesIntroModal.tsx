@@ -1,10 +1,14 @@
 
+
 import React, { useState, useEffect } from 'react';
-import { SeriesIntro, IntroTone, INTRO_TONES, StorySeries } from '../types';
-import { generateIntroScript } from '../services/geminiService';
+import { SeriesIntro, IntroTone, INTRO_TONES, VOICE_OPTIONS, StorySeries } from '../types';
+import { generateIntroScript, generateAudio } from '../services/geminiService';
+import useAudio from '../hooks/useAudio';
 import Button from '../components/Button';
 import TextArea from '../components/TextArea';
 import Spinner from '../components/Spinner';
+import AudioPlayer from '../components/AudioPlayer';
+import { generateFilename } from '../utils/audioUtils';
 
 interface SeriesIntroModalProps {
   isOpen: boolean;
@@ -18,13 +22,32 @@ const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, se
   // Form State
   const [tone, setTone] = useState<IntroTone>(existingIntro?.tone || 'Epic & Grandiose');
   const [themes, setThemes] = useState(existingIntro?.themes || '');
+  const [voice, setVoice] = useState(existingIntro?.voice || 'Zephyr');
   
   // Generation State
   const [script, setScript] = useState(existingIntro?.script || '');
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
   const [error, setError] = useState('');
 
-  const isBusy = isGeneratingScript;
+  // Audio State
+  const { loadAudio, unloadAudio, seek, downloadWav, downloadMp3, stop, isMp3BackgroundEncoding, mp3BackgroundEncodingProgress, isMp3Ready, ...audioPlayerProps } = useAudio();
+  const { isReady, error: audioError } = audioPlayerProps;
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [generatedAudioB64, setGeneratedAudioB64] = useState<string | null>(existingIntro?.audioBase64 || null);
+  const [audioGenerationProgress, setAudioGenerationProgress] = useState<number | null>(null);
+
+  // Load existing audio when modal opens
+  useEffect(() => {
+    if (isOpen && existingIntro?.audioBase64) {
+      loadAudio(existingIntro.audioBase64).catch(e => console.error("Failed to load existing intro audio", e));
+    } else if (!isOpen) {
+        unloadAudio();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, existingIntro]);
+
+
+  const isBusy = isGeneratingScript || isGeneratingAudio || audioPlayerProps.isLoading;
 
   const handleGenerateScript = async () => {
     if (!themes) {
@@ -34,6 +57,8 @@ const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, se
     setIsGeneratingScript(true);
     setError('');
     setScript('');
+    unloadAudio();
+    setGeneratedAudioB64(null);
 
     try {
       const generatedScript = await generateIntroScript(series.name, tone, themes);
@@ -45,6 +70,24 @@ const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, se
     }
   };
 
+  const handleGenerateAudio = async () => {
+    if (!script) return;
+    setIsGeneratingAudio(true);
+    setAudioGenerationProgress(0);
+    setError('');
+    
+    try {
+        const audioB64 = await generateAudio(script, voice, setAudioGenerationProgress);
+        setGeneratedAudioB64(audioB64);
+        await loadAudio(audioB64);
+    } catch (e: any) {
+        setError(`Audio generation failed: ${e.message}`);
+    } finally {
+        setIsGeneratingAudio(false);
+        setAudioGenerationProgress(null);
+    }
+  };
+
   const handleSave = () => {
     if (!script) {
         setError("Cannot save without a script.");
@@ -53,10 +96,22 @@ const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, se
     onSave({
         seriesId: series.id,
         script,
+        audioBase64: generatedAudioB64 || undefined,
+        voice,
         tone,
         themes,
     });
     onClose();
+  };
+
+  const handleDownloadWav = () => {
+    const filename = generateFilename(`series-${series.name.toLowerCase().replace(/\s+/g, '-')}-intro`, 'wav');
+    downloadWav(filename);
+  };
+
+  const handleDownloadMp3 = async () => {
+    const filename = generateFilename(`series-${series.name.toLowerCase().replace(/\s+/g, '-')}-intro`, 'mp3');
+    await downloadMp3(filename);
   };
 
   if (!isOpen) return null;
@@ -73,11 +128,19 @@ const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, se
                 {/* Step 1: Configuration */}
                 <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 space-y-4">
                     <h3 className="text-lg font-semibold text-indigo-300">1. Configure Your Intro</h3>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Tone / Mood</label>
-                        <select value={tone} onChange={e => setTone(e.target.value as IntroTone)} className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md">
-                            {INTRO_TONES.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Tone / Mood</label>
+                            <select value={tone} onChange={e => setTone(e.target.value as IntroTone)} className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md">
+                                {INTRO_TONES.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Narration Voice</label>
+                             <select value={voice} onChange={e => setVoice(e.target.value)} className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md">
+                                {VOICE_OPTIONS.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                            </select>
+                        </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">Key Themes & Elements</label>
@@ -95,11 +158,35 @@ const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, se
                     </div>
                 </div>
 
-                {/* Step 2: Script */}
+                {/* Step 2: Script & Audio */}
                 {(script || isGeneratingScript) && (
                     <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 space-y-4">
-                        <h3 className="text-lg font-semibold text-indigo-300">2. Review Intro</h3>
+                        <h3 className="text-lg font-semibold text-indigo-300">2. Review & Narrate</h3>
                         <TextArea value={script} readOnly rows={6} className="bg-gray-800/50 text-base leading-relaxed" />
+                        
+                        <div className="text-center">
+                            <Button onClick={handleGenerateAudio} disabled={!script || isBusy} className="flex items-center justify-center gap-2">
+                                {isGeneratingAudio ? <><Spinner /><span>{`Generating Audio (${audioGenerationProgress ?? 0}%)`}</span></> : 'Generate Narration'}
+                            </Button>
+                        </div>
+
+                        {(isReady || isGeneratingAudio || audioPlayerProps.isLoading || audioError || isMp3BackgroundEncoding) && (
+                            <div className="pt-2">
+                                <AudioPlayer
+                                    {...audioPlayerProps}
+                                    isLoading={isGeneratingAudio || audioPlayerProps.isLoading}
+                                    loadingText={isGeneratingAudio ? `Generating Audio... (${audioGenerationProgress ?? 0}%)` : 'Preparing Audio...'}
+                                    onSeek={seek}
+                                    downloadWav={handleDownloadWav}
+                                    downloadMp3={handleDownloadMp3}
+                                    stop={stop}
+                                    isMp3BackgroundEncoding={isMp3BackgroundEncoding}
+                                    mp3BackgroundEncodingProgress={mp3BackgroundEncodingProgress}
+                                    isMp3Ready={isMp3Ready}
+                                />
+                            </div>
+                        )}
+                        <p className="text-xs text-gray-400 text-center pt-2">For the full effect, layer this narration over epic background music in your video editor.</p>
                     </div>
                 )}
             </div>

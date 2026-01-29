@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { SeriesIntro, IntroTone, INTRO_TONES, VOICE_OPTIONS, StorySeries } from '../types';
 import { generateIntroScript, generateAudio } from '../services/geminiService';
 import useAudio from '../hooks/useAudio';
-import Button from './Button';
-import TextArea from './TextArea';
-import Spinner from './Spinner';
-import AudioPlayer from './AudioPlayer';
+import Button from '../components/Button';
+import TextArea from '../components/TextArea';
+import Spinner from '../components/Spinner';
+import AudioPlayer from '../components/AudioPlayer';
 import { generateFilename } from '../utils/audioUtils';
 
 interface SeriesIntroModalProps {
@@ -30,11 +30,11 @@ const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, se
   const [error, setError] = useState('');
 
   // Audio State
-  // FIX: Removed `retryLoad` and `downloadSegment` as they are not provided by `useAudio`
-  const { loadAudio, unloadAudio, seek, downloadWav, downloadMp3, stop, ...audioPlayerProps } = useAudio();
+  const { loadAudio, unloadAudio, seek, downloadWav, downloadMp3, stop, isMp3BackgroundEncoding, mp3BackgroundEncodingProgress, isMp3Ready, ...audioPlayerProps } = useAudio();
   const { isReady, error: audioError } = audioPlayerProps;
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
-  const [generatedAudioB64, setGeneratedAudioB64] = useState<string | string[] | null>(existingIntro?.audioBase64 || null);
+  // FIX: Changed state type from `string | string[] | null` to `string | null` because `generateAudio` returns a single string.
+  const [generatedAudioB64, setGeneratedAudioB64] = useState<string | null>(existingIntro?.audioBase64 || null);
   const [audioGenerationProgress, setAudioGenerationProgress] = useState<number | null>(null);
 
   // Load existing audio when modal opens
@@ -171,7 +171,7 @@ const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, se
                             </Button>
                         </div>
 
-                        {(isReady || isGeneratingAudio || audioPlayerProps.isLoading || audioError) && (
+                        {(isReady || isGeneratingAudio || audioPlayerProps.isLoading || audioError || isMp3BackgroundEncoding) && (
                             <div className="pt-2">
                                 <AudioPlayer
                                     {...audioPlayerProps}
@@ -181,6 +181,9 @@ const SeriesIntroModal: React.FC<SeriesIntroModalProps> = ({ isOpen, onClose, se
                                     downloadWav={handleDownloadWav}
                                     downloadMp3={handleDownloadMp3}
                                     stop={stop}
+                                    isMp3BackgroundEncoding={isMp3BackgroundEncoding}
+                                    mp3BackgroundEncodingProgress={mp3BackgroundEncodingProgress}
+                                    isMp3Ready={isMp3Ready}
                                 />
                             </div>
                         )}

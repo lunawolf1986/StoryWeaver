@@ -38,7 +38,7 @@ const SavedNarrativesDropdown: React.FC<SavedNarrativesDropdownProps> = ({ narra
     sorted.forEach(n => {
       if (n.type === 'Meditation') meds.push(n);
       else if (n.type === 'SleepStory') sleep.push(n);
-      else if (n.type === 'Story') {
+      else if (n.type === 'Story') { // Only process 'Story' type for series/standalone
         if (n.seriesId) {
           if (!seriesMap.has(n.seriesId)) {
             seriesMap.set(n.seriesId, { id: n.seriesId, name: '', narratives: [], lastUpdated: n.createdAt });

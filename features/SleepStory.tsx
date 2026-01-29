@@ -60,7 +60,7 @@ const SleepStory: React.FC<{
   const [isCustomLength, setIsCustomLength] = useLocalStorage<boolean>('sleep-is-custom-len', false);
 
   // Audio State
-  const { loadAudio, unloadAudio, seek, downloadWav, downloadMp3, stop, ...audioPlayerProps } = useAudio();
+  const { loadAudio, unloadAudio, seek, downloadWav, downloadMp3, stop, isMp3BackgroundEncoding, mp3BackgroundEncodingProgress, isMp3Ready, ...audioPlayerProps } = useAudio();
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [currentAudioBase64, setCurrentAudioBase64] = useState<string | null>(null);
 
@@ -264,7 +264,7 @@ const SleepStory: React.FC<{
         </div>
         <TextArea value={generatedText} onChange={e => setGeneratedText(e.target.value)} rows={10} className="bg-gray-900/50 rounded-xl font-serif leading-relaxed" />
         
-        {(audioPlayerProps.isReady || isGeneratingAudio || audioPlayerProps.isLoading || audioPlayerProps.error) && (
+        {(audioPlayerProps.isReady || isGeneratingAudio || audioPlayerProps.isLoading || audioPlayerProps.error || isMp3BackgroundEncoding) && (
             <div className="mt-4">
                 <AudioPlayer 
                     {...audioPlayerProps}
@@ -274,6 +274,9 @@ const SleepStory: React.FC<{
                     downloadWav={(name) => downloadWav(generateFilename(`sleep-story-${theme.toLowerCase().replace(/\s+/g, '-')}`, 'wav'))}
                     downloadMp3={(name) => downloadMp3(generateFilename(`sleep-story-${theme.toLowerCase().replace(/\s+/g, '-')}`, 'mp3'))}
                     stop={stop}
+                    isMp3BackgroundEncoding={isMp3BackgroundEncoding}
+                    mp3BackgroundEncodingProgress={mp3BackgroundEncodingProgress}
+                    isMp3Ready={isMp3Ready}
                 />
             </div>
         )}
