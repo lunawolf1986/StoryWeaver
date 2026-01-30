@@ -78,10 +78,19 @@ const SavedNarrativesDropdown: React.FC<SavedNarrativesDropdownProps> = ({ narra
         const zip = new JSZip();
         const folderName = narrative.title.replace(/[^a-z0-9]/gi, '_').substring(0, 50);
         zip.file('script.txt', narrative.content);
+        
         if (narrative.imageBase64) {
-            zip.file('cover_art.png', narrative.imageBase64, { base64: true });
+            const cleanImage = narrative.imageBase64.includes('base64,') ? narrative.imageBase64.split('base64,')[1] : narrative.imageBase64;
+            zip.file('cover_art.png', cleanImage, { base64: true, compression: "STORE" });
         }
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        
+        // Use optimized ZIP generation
+        const zipBlob = await zip.generateAsync({ 
+          type: 'blob', 
+          compression: "STORE",
+          streamFiles: true 
+        });
+        
         const url = URL.createObjectURL(zipBlob);
         const a = document.createElement('a');
         a.href = url;
@@ -89,7 +98,7 @@ const SavedNarrativesDropdown: React.FC<SavedNarrativesDropdownProps> = ({ narra
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch (error) {
         console.error("Failed to create asset bundle:", error);
         alert("Failed to create asset bundle.");

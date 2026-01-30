@@ -1,12 +1,11 @@
 
-
 import React, { useState, useMemo } from 'react';
 import Button from './Button';
 import { YouTubeExportContent } from '../types';
 import Spinner from './Spinner';
 import TextArea from './TextArea';
 import JSZip from 'jszip';
-import { decodeBase64 } from '../utils/audioUtils';
+import { decodeBase64, createWavFileFromChunks } from '../utils/audioUtils';
 
 interface YouTubeExportModalProps {
   isOpen: boolean;
@@ -24,7 +23,7 @@ const CopyButton: React.FC<{ onCopy: () => void; hasCopied: boolean }> = ({ onCo
     className={`px-3 py-1 text-xs rounded-md font-semibold transition-colors ${
       hasCopied
         ? 'bg-green-600 text-white'
-        : 'bg-gray-600 hover:bg-gray-500 text-gray-200'
+        : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
     }`}
   >
     {hasCopied ? 'Copied!' : 'Copy'}
@@ -77,22 +76,26 @@ const YouTubeExportModal: React.FC<YouTubeExportModalProps> = ({
       // 2. Story Script
       folder.file('story_script.txt', storyText);
 
-      // 3. Image (Cover Art)
+      // 3. Image (Cover Art) - Optimized: JSZip handles base64 efficiently
       if (imageBase64) {
         const base64Data = imageBase64.includes('base64,') ? imageBase64.split('base64,')[1] : imageBase64;
-        folder.file('cover_art.png', base64Data, { base64: true });
+        folder.file('cover_art.png', base64Data, { base64: true, compression: "STORE" });
       }
 
-      // 4. Audio Narration (now always WAV as MP3 encoding is removed client-side)
+      // 4. Audio Narration - FIXED: Must generate valid WAV with header from raw PCM
       if (audioBase64) {
         const rawPcmBytes = decodeBase64(audioBase64);
-        folder.file('narration.wav', rawPcmBytes, { binary: true });
+        const wavBlob = createWavFileFromChunks([rawPcmBytes], 24000, 1);
+        folder.file('narration.wav', wavBlob, { compression: "STORE" });
       }
 
-      // Generate Zip
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      // Generate Zip with optimized settings
+      const zipBlob = await zip.generateAsync({ 
+        type: 'blob',
+        compression: "STORE",
+        streamFiles: true
+      });
       
-      // Trigger Download
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
       a.href = url;
@@ -100,7 +103,7 @@ const YouTubeExportModal: React.FC<YouTubeExportModalProps> = ({
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
 
     } catch (error) {
       console.error("Failed to create bundle:", error);

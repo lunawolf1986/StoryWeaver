@@ -60,7 +60,6 @@ const request = async <T>(fn: () => Promise<T>, retries = 5): Promise<T> => {
       lastError = error;
       const msg = (error.message || '').toLowerCase();
       
-      // Check for mandatory key reset condition
       if (msg.includes('requested entity was not found')) {
           throw new Error("The API key selected appears to be invalid for this project. Please go to 'Settings: API Key' and re-select your key.");
       }
@@ -78,19 +77,21 @@ const request = async <T>(fn: () => Promise<T>, retries = 5): Promise<T> => {
 };
 
 /**
- * Wraps text in SSML for cinematic narration.
+ * Wraps text in a clean SSML container.
+ * We avoid all 'prosody' modifiers as they introduce artifacts.
  */
-const wrapInCinematicSSML = (text: string): string => {
-  return `<speak><prosody volume='loud' rate='98%' pitch='-1st'>${text.trim()}</prosody></speak>`;
+const wrapInCleanSSML = (text: string): string => {
+  return `<speak>${text.trim()}</speak>`;
 };
 
 export const generateAudio = async (text: string, voiceName: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const ssmlText = wrapInCinematicSSML(text);
+  // Removed directive/soothing voice instruction as requested.
+  // Using the pure text ensures the cleanest narration.
+  const ssmlText = wrapInCleanSSML(text);
   
   const response = await request<GenerateContentResponse>(() => ai.models.generateContent({
     model: "gemini-2.5-flash-preview-tts",
-    // We send only the SSML text to the model to avoid it narrating instructions
     contents: [{ parts: [{ text: ssmlText }] }],
     config: {
       responseModalities: [Modality.AUDIO],
@@ -99,12 +100,11 @@ export const generateAudio = async (text: string, voiceName: string): Promise<st
           prebuiltVoiceConfig: { voiceName },
         },
       },
-      audioConfig: { effectsProfileId: ['large-home-entertainment-class-device'] },
     },
   }));
   
   const data = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-  if (!data) throw new Error("Audio generation returned no data. Check API limits.");
+  if (!data) throw new Error("Audio generation returned no data.");
   return data;
 };
 
@@ -174,7 +174,6 @@ export const generateImage = async (prompt: string, config?: ImageGenConfig): Pr
   const isHighRes = config?.imageSize === "2K" || config?.imageSize === "4K";
   const modelName = isHighRes ? IMAGE_MODEL_PRO : (config?.model || IMAGE_MODEL_FLASH);
 
-  // imageSize is only valid for Pro model. Including it for Flash models causes API errors.
   const imageConfig: any = {
     aspectRatio: config?.aspectRatio || "16:9",
   };
@@ -192,20 +191,22 @@ export const generateImage = async (prompt: string, config?: ImageGenConfig): Pr
   }));
   
   const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-  if (!imagePart?.inlineData?.data) throw new Error("Visual generation failed. Ensure your API key has access to Image Generation.");
+  if (!imagePart?.inlineData?.data) throw new Error("Visual generation failed.");
   return imagePart.inlineData.data;
 };
 
 export const analyzeStory = async (story: string): Promise<AnalysisResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const storyContext = story.slice(-30000); 
+
   const response = await request<GenerateContentResponse>(() => ai.models.generateContent({
     model: ANALYSIS_MODEL,
-    contents: story.slice(-8000),
+    contents: storyContext,
     config: {
       systemInstruction: "You are a professional book editor. Perform a deep structural, stylistic, and character analysis. Output JSON only.",
       responseMimeType: "application/json",
-      maxOutputTokens: 2000,
-      thinkingConfig: { thinkingBudget: 1000 },
+      maxOutputTokens: 3000,
+      thinkingConfig: { thinkingBudget: 2000 },
       responseSchema: {
         type: Type.OBJECT,
         properties: {
@@ -223,7 +224,7 @@ export const analyzeStory = async (story: string): Promise<AnalysisResult> => {
                 fallingAction: { type: Type.STRING },
                 resolution: { type: Type.STRING }
             },
-            required: ["incitingIncident", "risingAction", "climax", "fallingAction", "resolution"]
+            required: ["incitingIncident", "risingAction", "climax", "fallingAction", "resolution"],
           },
           suggestions: {
             type: Type.ARRAY,
@@ -235,18 +236,37 @@ export const analyzeStory = async (story: string): Promise<AnalysisResult> => {
                 suggestedChange: { type: Type.STRING },
                 explanation: { type: Type.STRING },
               },
-              required: ["category", "originalText", "suggestedChange", "explanation"]
+              required: ["category", "originalText", "suggestedChange", "explanation"],
             }
           }
         },
-        required: ["critique", "vocabularyScore", "plotStructure", "suggestions", "characterAnalysis", "pacingAnalysis", "vocabularyAnalysis"]
+        required: [
+          "critique", 
+          "vocabularyScore", 
+          "plotStructure", 
+          "suggestions", 
+          "characterAnalysis", 
+          "pacingAnalysis", 
+          "vocabularyAnalysis"
+        ],
       }
     }
   }));
+
   try {
-    return JSON.parse(response.text || '{}');
+    const text = response.text || '';
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const jsonStr = jsonMatch ? jsonMatch[0] : text;
+    return JSON.parse(jsonStr);
   } catch (e) {
-    return { critique: "Analysis parsing error.", suggestions: [], vocabularyScore: 0 };
+    return { 
+        critique: "Analysis failed.", 
+        suggestions: [], 
+        vocabularyScore: 0,
+        characterAnalysis: "Analysis failed.",
+        pacingAnalysis: "Analysis failed.",
+        vocabularyAnalysis: "Analysis failed."
+    };
   }
 };
 

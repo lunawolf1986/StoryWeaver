@@ -32,56 +32,45 @@ const useAudio = (): AudioControls => {
   const [error, setError] = useState<string | null>(null);
   const [hasAudioData, setHasAudioData] = useState(false);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const cachedWavBlobRef = useRef<Blob | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+  const audioBufferRef = useRef<AudioBuffer | null>(null);
+  const startTimeRef = useRef<number>(0);
+  const pauseTimeRef = useRef<number>(0);
+  const timerRef = useRef<number | null>(null);
   const rawPcmRef = useRef<Uint8Array | null>(null);
 
-  const initAudioElement = useCallback(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.volume = 1.0;
-
-      audioRef.current.addEventListener('play', () => setIsPlaying(true));
-      audioRef.current.addEventListener('pause', () => setIsPlaying(false));
-      audioRef.current.addEventListener('ended', () => {
-        setIsPlaying(false);
-        setCurrentTime(0);
-      });
-      audioRef.current.addEventListener('timeupdate', () => {
-        if (audioRef.current) {
-          setCurrentTime(audioRef.current.currentTime);
-        }
-      });
-      audioRef.current.addEventListener('durationchange', () => {
-        if (audioRef.current) {
-          setDuration(audioRef.current.duration);
-        }
-      });
-      audioRef.current.addEventListener('error', (e) => {
-        console.error("Audio playback error:", e);
-        setError("Audio playback failed. The file might be corrupted or unsupported.");
-        setIsLoading(false);
-        setIsReady(false);
-      });
-      audioRef.current.addEventListener('canplaythrough', () => {
-        setIsLoading(false);
-        setIsReady(true);
-      });
+  const initAudioCtx = useCallback(() => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     }
-    return audioRef.current;
+    return audioCtxRef.current;
   }, []);
 
-  const unloadAudio = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      if (audioRef.current.dataset.blobUrl) {
-          URL.revokeObjectURL(audioRef.current.dataset.blobUrl);
-          delete audioRef.current.dataset.blobUrl;
+  const decodeAudioData = async (data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> => {
+    const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.byteLength / 2);
+    const frameCount = dataInt16.length / numChannels;
+    const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+
+    for (let channel = 0; channel < numChannels; channel++) {
+      const channelData = buffer.getChannelData(channel);
+      for (let i = 0; i < frameCount; i++) {
+        channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
       }
-      audioRef.current.removeAttribute('src');
-      audioRef.current.load();
     }
-    cachedWavBlobRef.current = null;
+    return buffer;
+  };
+
+  const unloadAudio = useCallback(() => {
+    if (sourceNodeRef.current) {
+      sourceNodeRef.current.stop();
+      sourceNodeRef.current = null;
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    audioBufferRef.current = null;
     rawPcmRef.current = null;
     setHasAudioData(false);
     setIsPlaying(false);
@@ -99,23 +88,18 @@ const useAudio = (): AudioControls => {
     setError(null);
 
     const b64Array = Array.isArray(base64) ? base64 : [base64];
-    const audioElement = initAudioElement();
+    const ctx = initAudioCtx();
 
     try {
       const pcmChunks: Uint8Array[] = [];
       let totalLength = 0;
-      for (let i = 0; i < b64Array.length; i++) {
-        if (!b64Array[i]) continue;
-        const bytes = decodeBase64(b64Array[i]);
+      for (const b64 of b64Array) {
+        if (!b64) continue;
+        const bytes = decodeBase64(b64);
         pcmChunks.push(bytes);
         totalLength += bytes.length;
       }
 
-      if (pcmChunks.length === 0) {
-        throw new Error("No valid audio data provided.");
-      }
-
-      // Optimize: Create a single flattened PCM buffer for the encoder
       const flattenedPcm = new Uint8Array(totalLength);
       let offset = 0;
       for (const chunk of pcmChunks) {
@@ -124,94 +108,108 @@ const useAudio = (): AudioControls => {
       }
       rawPcmRef.current = flattenedPcm;
 
-      // Pre-create the WAV Blob for instant download later
-      const wavBlob = createWavFileFromChunks(pcmChunks, 24000, 1);
-      cachedWavBlobRef.current = wavBlob;
-
-      const url = URL.createObjectURL(wavBlob);
-      audioElement.src = url;
-      audioElement.dataset.blobUrl = url;
-      audioElement.load();
+      const buffer = await decodeAudioData(flattenedPcm, ctx, 24000, 1);
+      audioBufferRef.current = buffer;
+      setDuration(buffer.duration);
       setHasAudioData(true);
-      
+      setIsReady(true);
+      setIsLoading(false);
     } catch (e: any) {
-      console.error("Failed to load audio:", e);
-      setError(`Audio loading failed: ${e.message || "An unknown error occurred."}`);
+      setError(`Audio decoding failed: ${e.message}`);
       setIsLoading(false);
       setIsReady(false);
     }
-  }, [unloadAudio, initAudioElement]);
-
-  const play = useCallback(() => {
-    if (audioRef.current && isReady) {
-      audioRef.current.play().catch(e => {
-        console.error("Error playing audio:", e);
-        setError("Playback blocked. Please interact with the page first.");
-      });
-    }
-  }, [isReady]);
-
-  const pause = useCallback(() => {
-    if (audioRef.current) audioRef.current.pause();
-  }, []);
+  }, [unloadAudio, initAudioCtx]);
 
   const stop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+    if (sourceNodeRef.current) {
+      sourceNodeRef.current.stop();
+      sourceNodeRef.current = null;
     }
-    setIsPlaying(false);
+    pauseTimeRef.current = 0;
     setCurrentTime(0);
+    setIsPlaying(false);
   }, []);
 
+  const startTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = window.setInterval(() => {
+      if (isPlaying && audioCtxRef.current) {
+        const played = audioCtxRef.current.currentTime - startTimeRef.current;
+        setCurrentTime(Math.min(played, duration));
+        if (played >= duration) {
+            stop();
+        }
+      }
+    }, 100);
+  }, [isPlaying, duration, stop]);
+
+  const play = useCallback(() => {
+    const ctx = initAudioCtx();
+    if (!audioBufferRef.current || !isReady) return;
+
+    if (sourceNodeRef.current) {
+        sourceNodeRef.current.stop();
+    }
+
+    const source = ctx.createBufferSource();
+    source.buffer = audioBufferRef.current;
+    source.connect(ctx.destination);
+    
+    const offset = pauseTimeRef.current;
+    source.start(0, offset);
+    startTimeRef.current = ctx.currentTime - offset;
+    sourceNodeRef.current = source;
+    setIsPlaying(true);
+    startTimer();
+  }, [initAudioCtx, isReady, startTimer]);
+
+  const pause = useCallback(() => {
+    if (sourceNodeRef.current && isPlaying) {
+      sourceNodeRef.current.stop();
+      sourceNodeRef.current = null;
+      if (audioCtxRef.current) {
+        pauseTimeRef.current = audioCtxRef.current.currentTime - startTimeRef.current;
+      }
+      setIsPlaying(false);
+    }
+  }, [isPlaying]);
+
   const seek = useCallback((time: number) => {
-    if (audioRef.current && isReady) audioRef.current.currentTime = time;
-  }, [isReady]);
+    const wasPlaying = isPlaying;
+    stop();
+    pauseTimeRef.current = time;
+    setCurrentTime(time);
+    if (wasPlaying) play();
+  }, [isPlaying, stop, play]);
 
   const downloadWav = useCallback((filename: string) => {
-    if (!cachedWavBlobRef.current) {
-        setError("No audio data ready for download.");
-        return;
-    }
-    const url = URL.createObjectURL(cachedWavBlobRef.current);
+    if (!rawPcmRef.current) return;
+    const blob = createWavFileFromChunks([rawPcmRef.current], 24000, 1);
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
-    document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, []);
-  
-  const downloadMp3 = useCallback(async (filename: string) => {
-      if (!rawPcmRef.current) {
-          setError("No audio data ready for MP3 conversion.");
-          return;
-      }
-      setIsEncoding(true);
-      try {
-        const mp3Blob = await encodePcmToMp3(rawPcmRef.current, 24000, 1, 128);
-        const url = URL.createObjectURL(mp3Blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } catch (e: any) {
-        setError(`MP3 conversion failed: ${e.message}`);
-      } finally {
-        setIsEncoding(false);
-      }
+    setTimeout(() => URL.revokeObjectURL(url), 100);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (audioRef.current && audioRef.current.dataset.blobUrl) {
-        URL.revokeObjectURL(audioRef.current.dataset.blobUrl);
-      }
-    };
+  const downloadMp3 = useCallback(async (filename: string) => {
+    if (!rawPcmRef.current) return;
+    setIsEncoding(true);
+    try {
+      const mp3Blob = await encodePcmToMp3(rawPcmRef.current, 24000, 1, 128);
+      const url = URL.createObjectURL(mp3Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (e: any) {
+      setError(`MP3 fail: ${e.message}`);
+    } finally {
+      setIsEncoding(false);
+    }
   }, []);
 
   return {

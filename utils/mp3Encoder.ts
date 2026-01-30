@@ -1,7 +1,7 @@
 
 /**
  * Encodes raw PCM data (Int16) to MP3 format.
- * This is a CPU intensive operation.
+ * Optimized for minimal allocations.
  */
 export async function encodePcmToMp3(
   pcmData: Uint8Array, 
@@ -11,22 +11,22 @@ export async function encodePcmToMp3(
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     try {
-      // Access the global lamejs instance provided by the <script> tag in index.html
       const lib = (window as any).lamejs;
       if (!lib) {
-        throw new Error("MP3 encoder library (lamejs) not found on window. Ensure it is loaded in index.html.");
+        throw new Error("MP3 encoder not available.");
       }
 
-      // Convert Uint8Array PCM to Int16Array for the encoder
-      const samples = new Int16Array(pcmData.buffer);
+      // Use the actual buffer slice to ensure we only process the relevant data
+      const samples = new Int16Array(pcmData.buffer, pcmData.byteOffset, pcmData.byteLength / 2);
       const mp3encoder = new lib.Mp3Encoder(numChannels, sampleRate, kbps);
-      const mp3Data: any[] = [];
+      const mp3Data: Uint8Array[] = [];
 
-      const sampleBlockSize = 576; // standard block size
-      for (let i = 0; i < samples.length; i += sampleBlockSize) {
-        const sampleChunk = samples.subarray(i, i + sampleBlockSize);
+      const blockSize = 1152; // Lame standard block size for better efficiency
+      for (let i = 0; i < samples.length; i += blockSize) {
+        const sampleChunk = samples.subarray(i, i + blockSize);
         const mp3buf = mp3encoder.encodeBuffer(sampleChunk);
         if (mp3buf.length > 0) {
+          // lamejs returns a buffer that might be reused, so we must copy it
           mp3Data.push(new Uint8Array(mp3buf));
         }
       }
